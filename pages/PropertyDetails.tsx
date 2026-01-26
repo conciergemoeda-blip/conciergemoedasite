@@ -11,6 +11,51 @@ interface PropertyDetailsProps {
 
 export const PropertyDetails: React.FC<PropertyDetailsProps> = ({ property, onBack }) => {
     const [isGalleryOpen, setIsGalleryOpen] = useState(false);
+    const [currentImageIndex, setCurrentImageIndex] = useState(0);
+    const [touchStart, setTouchStart] = useState<number | null>(null);
+    const [touchEnd, setTouchEnd] = useState<number | null>(null);
+
+    // Combine main image + gallery for the lightbox
+    const allImages = [property.imageUrl, ...property.gallery];
+
+    const openGallery = (index: number) => {
+        setCurrentImageIndex(index);
+        setIsGalleryOpen(true);
+    };
+
+    const nextImage = (e?: React.MouseEvent) => {
+        e?.stopPropagation();
+        setCurrentImageIndex((prev) => (prev + 1) % allImages.length);
+    };
+
+    const prevImage = (e?: React.MouseEvent) => {
+        e?.stopPropagation();
+        setCurrentImageIndex((prev) => (prev - 1 + allImages.length) % allImages.length);
+    };
+
+    // Swipe Handlers
+    const minSwipeDistance = 50;
+    const onTouchStart = (e: React.TouchEvent) => {
+        setTouchEnd(null);
+        setTouchStart(e.targetTouches[0].clientX);
+    };
+
+    const onTouchMove = (e: React.TouchEvent) => {
+        setTouchEnd(e.targetTouches[0].clientX);
+    };
+
+    const onTouchEnd = () => {
+        if (!touchStart || !touchEnd) return;
+        const distance = touchStart - touchEnd;
+        const isLeftSwipe = distance > minSwipeDistance;
+        const isRightSwipe = distance < -minSwipeDistance;
+        if (isLeftSwipe) {
+            setCurrentImageIndex((prev) => (prev + 1) % allImages.length);
+        }
+        if (isRightSwipe) {
+            setCurrentImageIndex((prev) => (prev - 1 + allImages.length) % allImages.length);
+        }
+    };
     const [checkIn, setCheckIn] = useState<Date | null>(null);
     const [checkOut, setCheckOut] = useState<Date | null>(null);
 
@@ -201,30 +246,40 @@ export const PropertyDetails: React.FC<PropertyDetailsProps> = ({ property, onBa
                 </div>
 
                 {/* Gallery Grid */}
-                <div className="grid grid-cols-1 md:grid-cols-4 grid-rows-2 gap-2 h-[400px] md:h-[500px] rounded-2xl overflow-hidden shadow-sm mb-12">
+                {/* Responsive Gallery Grid */}
+                <div className="relative h-[300px] md:h-[500px] mb-8 md:mb-12 rounded-2xl overflow-hidden shadow-sm md:grid md:grid-cols-4 md:grid-rows-2 md:gap-2">
+                    {/* Main Hero Image */}
                     <div
-                        className="col-span-1 md:col-span-2 row-span-2 relative group cursor-pointer"
-                        onClick={() => setIsGalleryOpen(true)}
+                        className="w-full h-full md:col-span-2 md:row-span-2 relative group cursor-pointer"
+                        onClick={() => openGallery(0)}
                     >
-                        <img src={property.imageUrl} alt="Main" className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
+                        <img
+                            src={property.imageUrl}
+                            alt="Capa"
+                            className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                        />
                         <div className="absolute inset-0 bg-black/10 group-hover:bg-transparent transition-colors"></div>
                     </div>
-                    {property.gallery.map((img, idx) => (
+
+                    {/* Side Images (Desktop Only) - Limit to 4 */}
+                    {property.gallery.slice(0, 4).map((img, idx) => (
                         <div
                             key={idx}
-                            className="relative group cursor-pointer overflow-hidden"
-                            onClick={() => setIsGalleryOpen(true)}
+                            className="hidden md:block relative group cursor-pointer overflow-hidden"
+                            onClick={() => openGallery(idx + 1)}
                         >
-                            <img src={img} alt={`Gallery ${idx}`} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
+                            <img src={img} alt={`Galeria ${idx}`} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
                         </div>
                     ))}
-                    {/* Fallback mock images if gallery is short */}
-                    {/* Fallback mock images removed */}
+
+                    {/* View All Button */}
                     <button
-                        onClick={() => setIsGalleryOpen(true)}
-                        className="absolute bottom-6 right-6 bg-white text-gray-900 px-4 py-2 rounded-lg text-xs font-bold shadow-md hover:scale-105 transition-transform z-10"
+                        onClick={() => openGallery(0)}
+                        className="absolute bottom-4 right-4 bg-white text-gray-900 px-4 py-2 rounded-lg text-xs font-bold shadow-lg hover:scale-105 transition-transform z-10 flex items-center gap-2"
                     >
-                        Mostrar todas as fotos
+                        <span className="material-symbols-outlined text-sm">grid_view</span>
+                        <span className="hidden sm:inline">Mostrar todas as fotos</span>
+                        <span className="sm:hidden">Fotos</span>
                     </button>
                 </div>
 
@@ -582,24 +637,55 @@ export const PropertyDetails: React.FC<PropertyDetailsProps> = ({ property, onBa
                     </button>
                 </div>
 
-                {/* Gallery Modal */}
+                {/* Lightbox Gallery Modal */}
                 {isGalleryOpen && (
-                    <div className="fixed inset-0 z-[60] bg-black/95 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in">
+                    <div
+                        className="fixed inset-0 z-[60] bg-black/95 backdrop-blur-sm flex items-center justify-center animate-fade-in"
+                        onClick={() => setIsGalleryOpen(false)}
+                        onTouchStart={onTouchStart}
+                        onTouchMove={onTouchMove}
+                        onTouchEnd={onTouchEnd}
+                    >
+
+                        {/* Close Button */}
                         <button
                             onClick={() => setIsGalleryOpen(false)}
-                            className="absolute top-6 right-6 text-white hover:text-gray-300 z-10 p-2"
+                            className="absolute top-6 right-6 text-white/80 hover:text-white z-50 p-2 transition-colors"
                         >
-                            <span className="material-symbols-outlined text-3xl">close</span>
+                            <span className="material-symbols-outlined text-4xl">close</span>
                         </button>
-                        <div className="w-full max-w-5xl h-[80vh] overflow-y-auto no-scrollbar snap-y snap-mandatory">
-                            <div className="space-y-4">
-                                <img src={property.imageUrl} alt="Gallery 1" className="w-full rounded-lg snap-center" />
-                                {property.gallery.map((img, i) => (
-                                    <img key={i} src={img} alt={`Gallery ${i}`} className="w-full rounded-lg snap-center" />
-                                ))}
-                                {/* Extra mocks removed */}
+
+                        {/* Navigation Buttons */}
+                        <button
+                            onClick={prevImage}
+                            className="absolute left-2 top-1/2 -translate-y-1/2 text-white/80 hover:text-white p-2 md:p-4 rounded-full hover:bg-white/10 transition-all z-50 bg-black/20 backdrop-blur-sm"
+                        >
+                            <span className="material-symbols-outlined text-3xl md:text-5xl">chevron_left</span>
+                        </button>
+
+                        <button
+                            onClick={nextImage}
+                            className="absolute right-2 top-1/2 -translate-y-1/2 text-white/80 hover:text-white p-2 md:p-4 rounded-full hover:bg-white/10 transition-all z-50 bg-black/20 backdrop-blur-sm"
+                        >
+                            <span className="material-symbols-outlined text-3xl md:text-5xl">chevron_right</span>
+                        </button>
+
+                        {/* Main Image Container */}
+                        <div className="w-full h-full flex flex-col items-center justify-center p-4 md:p-10" onClick={(e) => e.stopPropagation()}>
+                            <div className="relative w-full h-[85vh] flex items-center justify-center">
+                                <img
+                                    src={allImages[currentImageIndex]}
+                                    alt={`Gallery ${currentImageIndex}`}
+                                    className="max-w-full max-h-full object-contain shadow-2xl rounded-lg" // object-contain fixes the cropping issue!
+                                />
+                            </div>
+
+                            {/* Counter / Caption */}
+                            <div className="absolute bottom-6 left-1/2 -translate-x-1/2 text-white/90 text-sm font-medium tracking-widest bg-black/20 px-4 py-2 rounded-full backdrop-blur-md">
+                                {currentImageIndex + 1} / {allImages.length}
                             </div>
                         </div>
+
                     </div>
                 )}
 

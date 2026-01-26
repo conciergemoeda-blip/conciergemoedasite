@@ -122,7 +122,7 @@ export const PropertiesProvider: React.FC<{ children: React.ReactNode }> = ({ ch
 
             const { data, count, error } = await supabase
                 .from('properties')
-                .select('id, title, price, location, image_url, amenities, owner_id, owner_phone, owner_name, owner_bio, owner_avatar_url, guests, bedrooms, beds, baths, lat, lng, rating, reviews_count, featured, created_at', { count: 'exact' })
+                .select('id, title, price, location, image_url, gallery, amenities, owner_id, owner_phone, owner_name, owner_bio, owner_avatar_url, guests, bedrooms, beds, baths, lat, lng, rating, reviews_count, featured, created_at', { count: 'exact' })
                 .order('created_at', { ascending: false })
                 .range(from, to);
 
