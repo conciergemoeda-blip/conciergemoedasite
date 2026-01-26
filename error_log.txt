@@ -1,0 +1,11 @@
+pages/AdminDashboard.tsx(197,17): error TS1005: ')' expected.
+pages/AdminDashboard.tsx(198,13): error TS1109: Expression expected.
+pages/AdminDashboard.tsx(199,13): error TS1128: Declaration or statement expected.
+pages/AdminDashboard.tsx(199,30): error TS1005: ';' expected.
+pages/AdminDashboard.tsx(495,13): error TS1128: Declaration or statement expected.
+pages/AdminDashboard.tsx(495,25): error TS1005: ';' expected.
+pages/AdminDashboard.tsx(577,13): error TS1005: 'export' expected.
+pages/AdminDashboard.tsx(577,20): error TS1128: Declaration or statement expected.
+pages/AdminDashboard.tsx(694,9): error TS1128: Declaration or statement expected.
+pages/AdminDashboard.tsx(695,5): error TS1128: Declaration or statement expected.
+pages/AdminDashboard.tsx(846,1): error TS1128: Declaration or statement expected.
