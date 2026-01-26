@@ -141,6 +141,16 @@ export const PropertyDetails: React.FC<PropertyDetailsProps> = ({ property, onBa
         setIsSaved(!isSaved);
     };
 
+    // SEO: Dynamic Title
+    useEffect(() => {
+        if (property.title) {
+            document.title = `${property.title} | Concierge Moeda`;
+        }
+        return () => {
+            document.title = "Concierge Moeda"; // Reset on unmount
+        };
+    }, [property.title]);
+
     return (
         <div className="bg-white min-h-screen pb-32 lg:pb-20 relative">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -199,7 +209,7 @@ export const PropertyDetails: React.FC<PropertyDetailsProps> = ({ property, onBa
                         <img src={property.imageUrl} alt="Main" className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
                         <div className="absolute inset-0 bg-black/10 group-hover:bg-transparent transition-colors"></div>
                     </div>
-                    {property.gallery.slice(1).map((img, idx) => (
+                    {property.gallery.map((img, idx) => (
                         <div
                             key={idx}
                             className="relative group cursor-pointer overflow-hidden"
@@ -209,16 +219,7 @@ export const PropertyDetails: React.FC<PropertyDetailsProps> = ({ property, onBa
                         </div>
                     ))}
                     {/* Fallback mock images if gallery is short */}
-                    {property.gallery.length < 3 && (
-                        <>
-                            <div className="relative group cursor-pointer overflow-hidden" onClick={() => setIsGalleryOpen(true)}>
-                                <img src="https://images.unsplash.com/photo-1598928506311-c55ded91a20c?q=80&w=2070&auto=format&fit=crop" alt="Interior" className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
-                            </div>
-                            <div className="relative group cursor-pointer overflow-hidden" onClick={() => setIsGalleryOpen(true)}>
-                                <img src="https://images.unsplash.com/photo-1584622650111-993a426fbf0a?q=80&w=2070&auto=format&fit=crop" alt="Detail" className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
-                            </div>
-                        </>
-                    )}
+                    {/* Fallback mock images removed */}
                     <button
                         onClick={() => setIsGalleryOpen(true)}
                         className="absolute bottom-6 right-6 bg-white text-gray-900 px-4 py-2 rounded-lg text-xs font-bold shadow-md hover:scale-105 transition-transform z-10"
@@ -596,9 +597,7 @@ export const PropertyDetails: React.FC<PropertyDetailsProps> = ({ property, onBa
                                 {property.gallery.map((img, i) => (
                                     <img key={i} src={img} alt={`Gallery ${i}`} className="w-full rounded-lg snap-center" />
                                 ))}
-                                {/* Extra mocks for demo */}
-                                <img src="https://images.unsplash.com/photo-1598928506311-c55ded91a20c" className="w-full rounded-lg snap-center" />
-                                <img src="https://images.unsplash.com/photo-1584622650111-993a426fbf0a" className="w-full rounded-lg snap-center" />
+                                {/* Extra mocks removed */}
                             </div>
                         </div>
                     </div>

@@ -1,88 +1,130 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Concierge Moeda</title>
-    
-    <!-- Google Fonts: Manrope (Modern Sans) and Playfair Display (Elegant Serif) -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&display=swap" rel="stylesheet">
-    
-    <!-- Material Symbols for Icons (matching user preference) -->
-    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
 
-    <!-- Leaflet CSS -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Concierge Moeda | Hospedagem de Alto Padrão e Experiências Únicas</title>
+  <meta name="description"
+    content="Descubra os melhores sítios, chalés e fazendas na Serra da Moeda, MG. Curadoria exclusiva de imóveis de temporada e experiências locais inesquecíveis." />
+  <meta name="keywords"
+    content="Serra da Moeda, aluguel temporada, chalés, sítios, minas gerais, turismo, hospedagem luxo, natureza" />
+  <meta name="author" content="Concierge Moeda" />
 
-    <!-- Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-      tailwind.config = {
-        darkMode: 'class',
-        theme: {
-          extend: {
-            colors: {
-              primary: {
-                DEFAULT: '#3E5C26', // Deep Moss Green
-                dark: '#2A4018',
-                light: '#577A38'
-              },
-              secondary: {
-                DEFAULT: '#E07A1F', // Earthy Orange
-                light: '#F59E42'
-              },
-              background: {
-                light: '#F9FAFB',
-                dark: '#111827'
-              },
-              surface: {
-                white: '#FFFFFF',
-                dark: '#1F2937'
-              }
+  <!-- Open Graph / Facebook -->
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://concierge-moeda.vercel.app/" />
+  <meta property="og:title" content="Concierge Moeda | Refúgios na Serra" />
+  <meta property="og:description"
+    content="O melhor da Serra da Moeda você encontra aqui. Hospedagens exclusivas e contato direto com a natureza." />
+  <meta property="og:image" content="https://images.unsplash.com/photo-1542718610-a1d656d1884c?q=80&w=1200" />
+
+  <!-- Twitter -->
+  <meta property="twitter:card" content="summary_large_image" />
+  <meta property="twitter:url" content="https://concierge-moeda.vercel.app/" />
+  <meta property="twitter:title" content="Concierge Moeda | Hospedagem e Experiências" />
+  <meta property="twitter:description"
+    content="Encontre seu refúgio perfeito na Serra da Moeda. Chalés, Sítios e experiências únicas." />
+  <meta property="twitter:image" content="https://images.unsplash.com/photo-1542718610-a1d656d1884c?q=80&w=1200" />
+
+  <!-- Google Fonts: Manrope (Modern Sans) and Playfair Display (Elegant Serif) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&display=swap"
+    rel="stylesheet">
+
+  <!-- Material Symbols for Icons (matching user preference) -->
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap"
+    rel="stylesheet" />
+
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            primary: {
+              DEFAULT: '#3E5C26', // Deep Moss Green
+              dark: '#2A4018',
+              light: '#577A38'
             },
-            fontFamily: {
-              sans: ['Manrope', 'sans-serif'],
-              serif: ['Playfair Display', 'serif'],
+            secondary: {
+              DEFAULT: '#E07A1F', // Earthy Orange
+              light: '#F59E42'
             },
-            boxShadow: {
-              'soft': '0 4px 20px -2px rgba(0, 0, 0, 0.05)',
-              'card': '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
+            background: {
+              light: '#F9FAFB',
+              dark: '#111827'
+            },
+            surface: {
+              white: '#FFFFFF',
+              dark: '#1F2937'
             }
+          },
+          fontFamily: {
+            sans: ['Manrope', 'sans-serif'],
+            serif: ['Playfair Display', 'serif'],
+          },
+          boxShadow: {
+            'soft': '0 4px 20px -2px rgba(0, 0, 0, 0.05)',
+            'card': '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
           }
         }
       }
-    </script>
-    <style>
-      body {
-        -webkit-font-smoothing: antialiased;
-        -moz-osx-font-smoothing: grayscale;
+    }
+  </script>
+  <style>
+    body {
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+    }
+
+    .icon-filled {
+      font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+    }
+
+    /* Hide scrollbar for clean UI */
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+
+    .no-scrollbar {
+      -ms-overflow-style: none;
+      /* IE and Edge */
+      scrollbar-width: none;
+      /* Firefox */
+    }
+
+    /* Custom Map Marker Pulse */
+    .map-marker-pulse {
+      animation: markerPulse 2s infinite;
+    }
+
+    @keyframes markerPulse {
+      0% {
+        box-shadow: 0 0 0 0 rgba(74, 93, 35, 0.7);
       }
-      .material-symbols-outlined {
-        font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+
+      70% {
+        box-shadow: 0 0 0 15px rgba(74, 93, 35, 0);
       }
-      .icon-filled {
-        font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+
+      100% {
+        box-shadow: 0 0 0 0 rgba(74, 93, 35, 0);
       }
-      /* Hide scrollbar for clean UI */
-      .no-scrollbar::-webkit-scrollbar {
-          display: none;
-      }
-      .no-scrollbar {
-          -ms-overflow-style: none;  /* IE and Edge */
-          scrollbar-width: none;  /* Firefox */
-      }
-      /* Custom Map Marker Pulse */
-      .map-marker-pulse {
-        animation: markerPulse 2s infinite;
-      }
-      @keyframes markerPulse {
-        0% { box-shadow: 0 0 0 0 rgba(74, 93, 35, 0.7); }
-        70% { box-shadow: 0 0 0 15px rgba(74, 93, 35, 0); }
-        100% { box-shadow: 0 0 0 0 rgba(74, 93, 35, 0); }
-      }
-    </style>
+    }
+  </style>
   <script type="importmap">
 {
   "imports": {
@@ -93,12 +135,15 @@
   }
 }
 </script>
-<!-- Leaflet JS -->
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
-<link rel="stylesheet" href="/index.css">
+  <!-- Leaflet JS -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+    integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  <link rel="stylesheet" href="/index.css">
 </head>
-  <body class="bg-background-light text-gray-800">
-    <div id="root"></div>
+
+<body class="bg-background-light text-gray-800">
+  <div id="root"></div>
   <script type="module" src="/index.tsx"></script>
 </body>
+
 </html>

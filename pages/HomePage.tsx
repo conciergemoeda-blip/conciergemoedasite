@@ -35,7 +35,7 @@ const MIN_PRICE_GAP = 100;
 
 export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onPropertySelect }) => {
     // Use Supabase Data
-    const { properties, loading, error } = useProperties();
+    const { properties, loading, error, hasMore, loadMore } = useProperties();
 
     // Basic Search States
     const [searchTerm, setSearchTerm] = useState(''); // Used for location generic search
@@ -229,6 +229,11 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onPropertySelect
     const sliderMin = minPrice === '' ? 0 : parseInt(minPrice);
     const sliderMax = maxPrice === '' ? MAX_PRICE_RANGE : parseInt(maxPrice);
     const currentGuests = guestFilter ? parseInt(guestFilter) : 0;
+
+    // SEO: Set Title
+    useEffect(() => {
+        document.title = "Concierge Moeda | Início";
+    }, []);
 
     return (
         <div className="flex flex-col min-h-screen">
@@ -686,19 +691,21 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onPropertySelect
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 md:gap-10">
-                        {loading ? (
+                        {loading && properties.length === 0 ? (
                             Array.from({ length: 6 }).map((_, i) => (
                                 <PropertySkeleton key={i} />
                             ))
                         ) : filteredProperties.length > 0 ? (
-                            filteredProperties.map((property, index) => (
-                                <div key={property.id} className="animate-fade-in-up" style={{ animationDelay: `${index * 100}ms` }}>
-                                    <PropertyCard
-                                        property={property}
-                                        onClick={() => onPropertySelect(property)} // Corrected prop
-                                    />
-                                </div>
-                            ))
+                            <>
+                                {filteredProperties.map((property, index) => (
+                                    <div key={property.id} className="animate-fade-in-up" style={{ animationDelay: `${index * 100}ms` }}>
+                                        <PropertyCard
+                                            property={property}
+                                            onClick={() => onPropertySelect(property)} // Corrected prop
+                                        />
+                                    </div>
+                                ))}
+                            </>
                         ) : (
                             <div className="col-span-full">
                                 <EmptyState
@@ -709,6 +716,29 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onPropertySelect
                             </div>
                         )}
                     </div>
+
+                    {/* Load More Button */}
+                    {hasMore && !searchTerm && !locationFilter && (
+                        <div className="mt-12 text-center">
+                            <button
+                                onClick={loadMore}
+                                disabled={loading}
+                                className="inline-flex items-center gap-2 px-8 py-4 bg-white border border-gray-200 rounded-full text-gray-700 font-bold hover:bg-gray-50 hover:border-gray-300 transition-all shadow-sm active:scale-95 disabled:opacity-50"
+                            >
+                                {loading ? (
+                                    <>
+                                        <span className="material-symbols-outlined animate-spin">progress_activity</span>
+                                        Carregando...
+                                    </>
+                                ) : (
+                                    <>
+                                        <span className="material-symbols-outlined">add</span>
+                                        Ver mais imóveis
+                                    </>
+                                )}
+                            </button>
+                        </div>
+                    )}
                 </div>
             </section>
 

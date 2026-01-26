@@ -160,6 +160,81 @@ export const AddPropertyForm: React.FC<AddPropertyFormProps> = ({ onSave, onCanc
         });
     };
 
+    // --- IMAGE COMPRESSION UTILS ---
+    const compressImage = async (file: File): Promise<File> => {
+        // If file is small enough, return original
+        if (file.size <= 1 * 1024 * 1024) return file; // 1MB threshold
+
+        return new Promise((resolve, reject) => {
+            const img = new Image();
+            const url = URL.createObjectURL(file);
+
+            img.onload = () => {
+                URL.revokeObjectURL(url);
+                const canvas = document.createElement('canvas');
+                let width = img.width;
+                let height = img.height;
+
+                // Max dimensions
+                const MAX_WIDTH = 1920;
+                const MAX_HEIGHT = 1920;
+
+                if (width > height) {
+                    if (width > MAX_WIDTH) {
+                        height = Math.round((height * MAX_WIDTH) / width);
+                        width = MAX_WIDTH;
+                    }
+                } else {
+                    if (height > MAX_HEIGHT) {
+                        width = Math.round((width * MAX_HEIGHT) / height);
+                        height = MAX_HEIGHT;
+                    }
+                }
+
+                canvas.width = width;
+                canvas.height = height;
+
+                const ctx = canvas.getContext('2d');
+                if (!ctx) {
+                    resolve(file);
+                    return;
+                }
+
+                ctx.drawImage(img, 0, 0, width, height);
+
+                // Export to blob
+                canvas.toBlob(
+                    (blob) => {
+                        if (blob) {
+                            // If compression resulted in larger file (rare but possible with low quality original), use original
+                            if (blob.size > file.size) {
+                                resolve(file);
+                            } else {
+                                const newFile = new File([blob], file.name.replace(/\.[^/.]+$/, "") + ".jpg", {
+                                    type: 'image/jpeg',
+                                    lastModified: Date.now(),
+                                });
+                                resolve(newFile);
+                            }
+                        } else {
+                            resolve(file);
+                        }
+                    },
+                    'image/jpeg',
+                    0.8 // Quality (0.0 - 1.0)
+                );
+            };
+
+            img.onerror = (error) => {
+                URL.revokeObjectURL(url);
+                console.error("Compression error:", error);
+                resolve(file); // Fallback to original
+            };
+
+            img.src = url;
+        });
+    };
+
     // --- MAIN IMAGE UPLOAD LOGIC ---
     const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -169,13 +244,16 @@ export const AddPropertyForm: React.FC<AddPropertyFormProps> = ({ onSave, onCanc
 
     const uploadImage = async (file: File): Promise<string | null> => {
         try {
-            const fileExt = file.name.split('.').pop();
+            // Compress before upload
+            const compressedFile = await compressImage(file);
+
+            const fileExt = compressedFile.name.split('.').pop() || 'jpg';
             const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
             const filePath = `${fileName}`;
 
             const { error: uploadError } = await supabase.storage
                 .from('property-images')
-                .upload(filePath, file);
+                .upload(filePath, compressedFile);
 
             if (uploadError) {
                 console.error('Error uploading image:', uploadError);
@@ -197,8 +275,10 @@ export const AddPropertyForm: React.FC<AddPropertyFormProps> = ({ onSave, onCanc
     const processFile = async (file?: File) => {
         if (!file) return;
 
-        if (file.size > 5 * 1024 * 1024) {
-            alert('A imagem deve ter no máximo 5MB.');
+        // Removed strict 5MB block since we now compress
+        // But keep a sanity check for absurdly huge files (e.g. 50MB+) that might crash browser memory
+        if (file.size > 50 * 1024 * 1024) {
+            alert('Arquivo muito grande. Por favor escolha uma imagem menor que 50MB.');
             return;
         }
 
@@ -564,7 +644,7 @@ export const AddPropertyForm: React.FC<AddPropertyFormProps> = ({ onSave, onCanc
                                                     </span>
                                                 </div>
                                                 <p className="text-base font-bold text-gray-700">Clique ou arraste a capa aqui</p>
-                                                <p className="text-sm text-gray-400 mt-2 mb-6">JPG, PNG ou WebP (Máx. 5MB)</p>
+                                                <p className="text-sm text-gray-400 mt-2 mb-6">JPG, PNG ou WebP (Máx. 50MB)</p>
 
                                                 <div className="flex items-center gap-3 w-full max-w-sm">
                                                     <button type="button" className="flex-1 bg-white border border-gray-200 text-gray-700 py-2.5 rounded-xl text-xs font-bold hover:bg-gray-50 flex items-center justify-center gap-2 shadow-sm transition-transform active:scale-95" onClick={(e) => { e.stopPropagation(); triggerFileUpload(); }}>
@@ -636,14 +716,14 @@ export const AddPropertyForm: React.FC<AddPropertyFormProps> = ({ onSave, onCanc
                                         {formData.gallery.map((img, index) => (
                                             <div key={index} className="relative group aspect-square rounded-xl overflow-hidden border border-gray-200">
                                                 <img src={img} alt={`Gallery ${index}`} className="w-full h-full object-cover" />
-                                                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                                <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-100 transition-opacity">
                                                     <button
                                                         type="button"
                                                         onClick={() => handleRemoveGalleryImage(index)}
-                                                        className="bg-white/90 text-red-600 p-2 rounded-full hover:bg-white transition-colors"
+                                                        className="bg-red-500/90 text-white p-2 rounded-full hover:bg-red-600 transition-colors shadow-sm"
                                                         title="Remover"
                                                     >
-                                                        <span className="material-symbols-outlined text-sm font-bold">close</span>
+                                                        <span className="material-symbols-outlined text-sm font-bold">delete</span>
                                                     </button>
                                                 </div>
                                             </div>

@@ -6,10 +6,14 @@ interface PropertiesContextType {
     properties: Property[];
     loading: boolean;
     error: string | null;
+    page: number;
+    totalPages: number;
+    hasMore: boolean;
     addProperty: (property: Property) => Promise<Property>;
     updateProperty: (property: Property) => Promise<void>;
     deleteProperty: (id: string) => Promise<void>;
     refresh: () => Promise<void>;
+    loadMore: () => Promise<void>;
 }
 
 const PropertiesContext = createContext<PropertiesContextType | undefined>(undefined);
@@ -104,30 +108,50 @@ export const PropertiesProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     const [properties, setProperties] = useState<Property[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [page, setPage] = useState(1);
+    const [totalPages, setTotalPages] = useState(1);
+    const PAGE_SIZE = 12;
 
-    const fetchProperties = async () => {
+    const fetchProperties = async (pageToFetch = 1) => {
         try {
-            // Do not reset loading to true on refresh to avoid screen flicker, handle locally if needed
-            // But for first load valid.
-            if (properties.length === 0) setLoading(true);
+            if (pageToFetch === 1) setLoading(true);
 
-            const { data, error } = await supabase
+            // Calculate range for Supabase
+            const from = (pageToFetch - 1) * PAGE_SIZE;
+            const to = from + PAGE_SIZE - 1;
+
+            const { data, count, error } = await supabase
                 .from('properties')
-                .select('id, title, price, location, image_url, amenities, owner_id, owner_phone, owner_name, owner_bio, owner_avatar_url, guests, bedrooms, beds, baths, lat, lng, rating, reviews_count, featured, created_at')
+                .select('id, title, price, location, image_url, amenities, owner_id, owner_phone, owner_name, owner_bio, owner_avatar_url, guests, bedrooms, beds, baths, lat, lng, rating, reviews_count, featured, created_at', { count: 'exact' })
                 .order('created_at', { ascending: false })
-                .limit(20);
+                .range(from, to);
 
             if (error) throw error;
 
             if (data) {
                 const mapped = data.map(dbToProperty);
-                setProperties(mapped);
+                if (pageToFetch === 1) {
+                    setProperties(mapped);
+                } else {
+                    setProperties(prev => [...prev, ...mapped]);
+                }
+
+                if (count) {
+                    setTotalPages(Math.ceil(count / PAGE_SIZE));
+                }
+                setPage(pageToFetch);
             }
         } catch (err: any) {
             console.error('Error fetching properties:', err);
             setError(err.message);
         } finally {
             setLoading(false);
+        }
+    };
+
+    const loadMore = async () => {
+        if (page < totalPages) {
+            await fetchProperties(page + 1);
         }
     };
 
@@ -201,10 +225,14 @@ export const PropertiesProvider: React.FC<{ children: React.ReactNode }> = ({ ch
             properties,
             loading,
             error,
+            page,
+            totalPages,
+            hasMore: page < totalPages,
             addProperty,
             updateProperty,
             deleteProperty,
-            refresh: fetchProperties
+            refresh: () => fetchProperties(1),
+            loadMore
         }}>
             {children}
         </PropertiesContext.Provider>
