@@ -8,15 +8,50 @@ import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { PropertiesProvider } from './contexts/PropertiesContext';
 import { Page, Property } from './types';
 import { useProperties } from './hooks/useProperties';
+import { LOGO_BASE64 } from './constants_logo';
+import { ToastProvider } from './components/Toast';
+
+import { SettingsProvider, useSettings } from './contexts/SettingsContext';
+
 
 const AppContent: React.FC = () => {
   const [currentPage, setCurrentPage] = useState<Page>('HOME');
   const [selectedPropertyId, setSelectedPropertyId] = useState<string | null>(null);
   const { user, loading: authLoading } = useAuth();
-  const { properties } = useProperties(); // Fetch properties for details view
+  const { settings } = useSettings();
+  const { properties } = useProperties();
+
+  // Sync state with URL on mount and popstate
+  useEffect(() => {
+    const handleLocationChange = () => {
+      const params = new URLSearchParams(window.location.search);
+      const pageParam = params.get('p') as Page;
+      const idParam = params.get('id');
+
+      if (pageParam) {
+        setCurrentPage(pageParam);
+      }
+      if (idParam) {
+        setSelectedPropertyId(idParam);
+      }
+    };
+
+    handleLocationChange();
+    window.addEventListener('popstate', handleLocationChange);
+    return () => window.removeEventListener('popstate', handleLocationChange);
+  }, []);
 
   const navigateTo = (page: Page, id?: string) => {
+    const params = new URLSearchParams();
+    params.set('p', page);
+    if (id) params.set('id', id);
+
+    // Update URL history
+    const newUrl = `${window.location.pathname}?${params.toString()}`;
+    window.history.pushState({ page, id }, '', newUrl);
+
     if (id) setSelectedPropertyId(id);
+    else setSelectedPropertyId(null);
 
     // Protection Rule: If trying to go to Admin without user, go to Login
     if (page === 'ADMIN_DASHBOARD' && !user) {
@@ -31,7 +66,7 @@ const AppContent: React.FC = () => {
   // Redirect if on Login but already logged in
   useEffect(() => {
     if (user && currentPage === 'LOGIN') {
-      setCurrentPage('ADMIN_DASHBOARD');
+      navigateTo('ADMIN_DASHBOARD');
     }
   }, [user, currentPage]);
 
@@ -92,9 +127,9 @@ const AppContent: React.FC = () => {
         <footer className="bg-surface-dark text-white py-12">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-1 md:grid-cols-4 gap-8">
             <div className="col-span-1 md:col-span-2">
-              <div className="flex items-center gap-3 mb-4">
-                <span className="material-symbols-outlined text-4xl text-primary">landscape</span>
-                <span className="font-serif font-bold text-xl">Concierge Moeda</span>
+              <div className="flex items-center gap-3 mb-6">
+                <img src={LOGO_BASE64} alt="Concierge Moeda Logo" className="h-12 w-12 object-contain" />
+                <span className="font-serif font-bold text-2xl tracking-tight">Concierge Moeda</span>
               </div>
               <p className="text-gray-400 max-w-sm text-sm leading-relaxed">
                 Especialistas em conectar hóspedes exigentes às melhores propriedades da região. Vivencie o charme mineiro com sofisticação.
@@ -102,9 +137,10 @@ const AppContent: React.FC = () => {
             </div>
             {/* Footer links omitted for brevity but keeping structure */}
             <div className="text-gray-500 text-sm">
-              <p>Contato: (31) 99999-9999</p>
-              <p>contato@conciergemoeda.com.br</p>
+              <p>Contato: {settings.formattedWhatsapp}</p>
+              <p>{settings.email}</p>
             </div>
+
           </div>
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-12 pt-8 border-t border-gray-800 text-center text-gray-500 text-xs">
             © 2026 Concierge Moeda. Todos os direitos reservados.
@@ -119,9 +155,14 @@ const App: React.FC = () => {
   return (
     <AuthProvider>
       <PropertiesProvider>
-        <AppContent />
+        <SettingsProvider>
+          <ToastProvider>
+            <AppContent />
+          </ToastProvider>
+        </SettingsProvider>
       </PropertiesProvider>
     </AuthProvider>
+
   );
 };
 

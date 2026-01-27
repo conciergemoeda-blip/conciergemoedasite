@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import { Property } from '../types';
+import { useAuth } from '../contexts/AuthContext';
+import { useToast } from './Toast';
+import { ConfirmModal } from './ConfirmModal';
 
 interface Review {
     id: string;
@@ -16,6 +18,7 @@ interface ReviewSectionProps {
 }
 
 export const ReviewSection: React.FC<ReviewSectionProps> = ({ propertyId, propertyName }) => {
+    const { user } = useAuth();
     const [reviews, setReviews] = useState<Review[]>([]);
     const [loading, setLoading] = useState(true);
 
@@ -25,6 +28,11 @@ export const ReviewSection: React.FC<ReviewSectionProps> = ({ propertyId, proper
     const [rating, setRating] = useState(5);
     const [submitting, setSubmitting] = useState(false);
     const [showForm, setShowForm] = useState(false);
+
+    // Notification State
+    const { showToast } = useToast();
+    const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+    const [reviewToDelete, setReviewToDelete] = useState<string | null>(null);
 
     const fetchReviews = async () => {
         try {
@@ -40,6 +48,28 @@ export const ReviewSection: React.FC<ReviewSectionProps> = ({ propertyId, proper
             console.error('Error loading reviews:', err);
         } finally {
             setLoading(false);
+        }
+    };
+
+    const updatePropertyMetadata = async () => {
+        const { data: allReviews, error: fetchError } = await supabase
+            .from('reviews')
+            .select('rating')
+            .eq('property_id', propertyId);
+
+        if (!fetchError && allReviews) {
+            const count = allReviews.length;
+            const avgRating = count > 0
+                ? allReviews.reduce((acc, r) => acc + r.rating, 0) / count
+                : 5.0; // Default if no reviews
+
+            await supabase
+                .from('properties')
+                .update({
+                    rating: Number(avgRating.toFixed(1)),
+                    reviews_count: count
+                })
+                .eq('id', propertyId);
         }
     };
 
@@ -64,17 +94,46 @@ export const ReviewSection: React.FC<ReviewSectionProps> = ({ propertyId, proper
 
             if (error) throw error;
 
+            await updatePropertyMetadata();
+
             // Reset form and reload
             setAuthorName('');
             setComment('');
             setRating(5);
             setShowForm(false);
             fetchReviews();
-            alert('Avaliação enviada com sucesso!');
+            showToast('Avaliação enviada com sucesso!', 'success');
         } catch (err: any) {
-            alert('Erro ao enviar avaliação: ' + err.message);
+            showToast('Erro ao enviar avaliação: ' + err.message, 'error');
         } finally {
             setSubmitting(false);
+        }
+    };
+
+    const handleDeleteReview = async (reviewId: string) => {
+        setReviewToDelete(reviewId);
+        setIsDeleteModalOpen(true);
+    };
+
+    const confirmDelete = async () => {
+        if (!reviewToDelete) return;
+
+        try {
+            const { error } = await supabase
+                .from('reviews')
+                .delete()
+                .eq('id', reviewToDelete);
+
+            if (error) throw error;
+
+            await updatePropertyMetadata();
+            fetchReviews();
+            showToast('Avaliação excluída com sucesso!', 'success');
+        } catch (err: any) {
+            showToast('Erro ao excluir avaliação: ' + err.message, 'error');
+        } finally {
+            setIsDeleteModalOpen(false);
+            setReviewToDelete(null);
         }
     };
 
@@ -96,7 +155,7 @@ export const ReviewSection: React.FC<ReviewSectionProps> = ({ propertyId, proper
                 </div>
                 <button
                     onClick={() => setShowForm(!showForm)}
-                    className="bg-gray-900 text-white px-6 py-3 rounded-xl font-bold hover:bg-black transition-colors shadow-lg active:scale-95"
+                    className="bg-primary hover:bg-primary-dark text-white px-6 py-3 rounded-xl font-bold transition-all shadow-lg active:scale-95"
                 >
                     {showForm ? 'Cancelar' : 'Avaliar Estadia'}
                 </button>
@@ -174,7 +233,18 @@ export const ReviewSection: React.FC<ReviewSectionProps> = ({ propertyId, proper
                                         {review.author_name[0].toUpperCase()}
                                     </div>
                                     <div>
-                                        <h4 className="font-bold text-gray-900">{review.author_name}</h4>
+                                        <div className="flex items-center gap-2">
+                                            <h4 className="font-bold text-gray-900">{review.author_name}</h4>
+                                            {user && (
+                                                <button
+                                                    onClick={() => handleDeleteReview(review.id)}
+                                                    className="text-gray-300 hover:text-red-500 transition-colors"
+                                                    title="Excluir Avaliação"
+                                                >
+                                                    <span className="material-symbols-outlined text-sm">delete</span>
+                                                </button>
+                                            )}
+                                        </div>
                                         <p className="text-xs text-gray-400">{new Date(review.created_at).toLocaleDateString('pt-BR')}</p>
                                     </div>
                                 </div>
@@ -191,6 +261,16 @@ export const ReviewSection: React.FC<ReviewSectionProps> = ({ propertyId, proper
                     ))
                 )}
             </div>
+
+            <ConfirmModal
+                isOpen={isDeleteModalOpen}
+                title="Excluir Avaliação"
+                message="Tem certeza que deseja excluir esta avaliação? Esta ação não pode ser desfeita."
+                onConfirm={confirmDelete}
+                onCancel={() => setIsDeleteModalOpen(false)}
+                confirmLabel="Excluir"
+                isDanger={true}
+            />
         </div>
     );
 };

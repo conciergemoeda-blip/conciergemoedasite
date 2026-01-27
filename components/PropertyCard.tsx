@@ -78,10 +78,10 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({ property, onClick })
         {/* Title & Rating */}
         <div className="flex justify-between items-start mb-2">
           <div className="flex-1 pr-2">
-            <h3 className="font-serif font-bold text-lg text-gray-900 leading-tight group-hover:text-primary transition-colors duration-300 line-clamp-1">
+            <h3 className="font-serif font-bold text-lg text-gray-900 leading-tight group-hover:text-primary transition-colors duration-300 line-clamp-1 capitalize">
               {property.title}
             </h3>
-            <p className="text-sm text-gray-500 mt-1.5 flex items-center gap-1">
+            <p className="text-sm text-gray-500 mt-1.5 flex items-center gap-1 capitalize">
               <span className="material-symbols-outlined text-base text-gray-400">location_on</span>
               <span className="line-clamp-1">{property.location}</span>
             </p>
@@ -93,39 +93,50 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({ property, onClick })
         </div>
 
         {/* Amenities Icons */}
-        <div className="flex items-center gap-4 mt-3 text-gray-500 text-sm border-t border-gray-100 pt-3">
-          <span className="flex items-center gap-1.5 hover:text-primary transition-colors">
-            <span className="material-symbols-outlined text-lg">group</span>
-            <span className="font-medium">{property.guests}</span>
+        <div className="flex items-center gap-3 mt-3 text-gray-500 text-[11px] font-bold uppercase tracking-tighter border-t border-gray-100 pt-3">
+          <span className="flex items-center gap-1 hover:text-primary transition-colors">
+            <span className="material-symbols-outlined text-base">group</span>
+            <span>{property.guests} Hóspedes</span>
           </span>
-          <span className="flex items-center gap-1.5 hover:text-primary transition-colors">
-            <span className="material-symbols-outlined text-lg">bed</span>
-            <span className="font-medium">{property.bedrooms}</span>
+          <span className="flex items-center gap-1 hover:text-primary transition-colors">
+            <span className="material-symbols-outlined text-base">bed</span>
+            <span>{property.bedrooms} Quartos</span>
           </span>
-          <span className="flex items-center gap-1.5 hover:text-primary transition-colors">
-            <span className="material-symbols-outlined text-lg">shower</span>
-            <span className="font-medium">{property.baths}</span>
+          <span className="flex items-center gap-1 hover:text-primary transition-colors">
+            <span className="material-symbols-outlined text-base">shower</span>
+            <span>{property.baths} {property.baths === 1 ? 'Banheiro' : 'Banh.'}</span>
           </span>
         </div>
 
+        {/* Extra Pricing Info Badge */}
+        {(property.weekend_price || property.cleaning_fee) ? (
+          <div className="mt-2 flex gap-2">
+            {property.weekend_price && property.weekend_price > 0 && (
+              <span className="text-[9px] bg-primary/5 text-primary-dark px-2 py-0.5 rounded-md font-bold uppercase">FDS R$ {property.weekend_price}</span>
+            )}
+            {property.cleaning_fee && property.cleaning_fee > 0 && (
+              <span className="text-[9px] bg-gray-100 text-gray-500 px-2 py-0.5 rounded-md font-bold uppercase">Limpeza R$ {property.cleaning_fee}</span>
+            )}
+          </div>
+        ) : null}
+
         {/* Price & CTA */}
-        <div className="mt-4 pt-3 border-t border-gray-50 flex justify-between items-end gap-4">
+        <div className="mt-auto pt-4 flex justify-between items-end gap-1">
           <div className="flex flex-col">
-            <span className="text-xs text-gray-400 uppercase tracking-wide font-medium mb-0.5">A partir de</span>
+            <span className="text-[10px] text-gray-400 uppercase tracking-wide font-bold mb-0.5">A partir de</span>
             <div className="flex items-baseline gap-1">
               <span className="font-bold text-2xl text-primary gradient-text-primary">R$ {property.price}</span>
-              <span className="text-xs text-gray-500 font-medium">/ noite</span>
+              <span className="text-[10px] text-gray-500 font-bold">/ diária</span>
             </div>
           </div>
           <button
-            className="text-xs font-bold text-secondary uppercase tracking-wider flex items-center gap-1 hover:gap-2 transition-all duration-300 hover:text-primary group/btn"
+            className="text-xs font-bold text-secondary uppercase tracking-wider flex items-center gap-1 hover:gap-2 transition-all duration-300 hover:text-primary group/btn bg-gray-50 px-3 py-2 rounded-xl border border-transparent hover:border-gray-200"
             onClick={(e) => {
               e.stopPropagation();
               onClick(property.id);
             }}
           >
-            <span className="hidden sm:inline">Ver Detalhes</span>
-            <span className="sm:hidden">Ver</span>
+            <span>Ver</span>
             <span className="material-symbols-outlined text-base group-hover/btn:translate-x-1 transition-transform">arrow_forward</span>
           </button>
         </div>

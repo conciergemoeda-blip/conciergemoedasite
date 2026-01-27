@@ -46,13 +46,22 @@ const dbToProperty = (dbData: any): Property => {
             bedrooms: dbData.bedrooms || 1,
             beds: dbData.beds || 1,
             baths: dbData.baths || 1,
+            weekend_price: Number(dbData.weekend_price) || 0,
+            cleaning_fee: Number(dbData.cleaning_fee) || 0,
+            min_stay: dbData.min_stay || 1,
             coordinates: {
                 lat: Number(dbData.lat) || 0,
                 lng: Number(dbData.lng) || 0
             },
             rating: Number(dbData.rating) || 5.0,
             reviews: dbData.reviews_count || 0,
-            tags: (Array.isArray(dbData.featured) ? dbData.featured : (dbData.featured ? ['Superhost'] : ['Novo'])) as any
+            tags: (() => {
+                const tagsList: any[] = [];
+                if (dbData.featured) tagsList.push('Superhost');
+                if (!dbData.active) tagsList.push('Pausado');
+                if (tagsList.length === 0) tagsList.push('Novo');
+                return tagsList;
+            })()
         };
     } catch (error) {
         console.error("Error mapping property:", error, dbData);
@@ -96,6 +105,9 @@ const propertyToDb = async (p: Property) => {
         bedrooms: p.bedrooms,
         beds: p.beds,
         baths: p.baths,
+        weekend_price: p.weekend_price || 0,
+        cleaning_fee: p.cleaning_fee || 0,
+        min_stay: p.min_stay || 1,
         lat: p.coordinates?.lat || 0,
         lng: p.coordinates?.lng || 0,
         rating: p.rating || 5.0,
@@ -122,14 +134,20 @@ export const PropertiesProvider: React.FC<{ children: React.ReactNode }> = ({ ch
 
             const { data, count, error } = await supabase
                 .from('properties')
-                .select('id, title, price, location, image_url, gallery, amenities, owner_id, owner_phone, owner_name, owner_bio, owner_avatar_url, guests, bedrooms, beds, baths, lat, lng, rating, reviews_count, featured, created_at', { count: 'exact' })
+                .select('id, title, price, weekend_price, cleaning_fee, min_stay, location, image_url, gallery, amenities, owner_id, owner_phone, owner_name, owner_bio, owner_avatar_url, guests, bedrooms, beds, baths, lat, lng, rating, reviews_count, featured, active, created_at', { count: 'exact' })
                 .order('created_at', { ascending: false })
                 .range(from, to);
 
-            if (error) throw error;
+            console.log('Supabase Fetch Result:', { dataLength: data?.length, count, error });
+
+            if (error) {
+                console.error('Supabase Error Details:', error);
+                throw error;
+            }
 
             if (data) {
                 const mapped = data.map(dbToProperty);
+                console.log('Mapped Properties:', mapped.length);
                 if (pageToFetch === 1) {
                     setProperties(mapped);
                 } else {
@@ -142,7 +160,7 @@ export const PropertiesProvider: React.FC<{ children: React.ReactNode }> = ({ ch
                 setPage(pageToFetch);
             }
         } catch (err: any) {
-            console.error('Error fetching properties:', err);
+            console.error('Error fetching properties (Catch):', err);
             setError(err.message);
         } finally {
             setLoading(false);

@@ -1,9 +1,11 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Property } from '../types';
 import { PropertyCard } from './PropertyCard';
+import { MapLocationPicker } from './MapLocationPicker';
 
 import { ADMIN_USER } from '../constants';
 import { supabase } from '../lib/supabase';
+import { useToast } from './Toast';
 
 interface AddPropertyFormProps {
     onSave: (property: Property) => void;
@@ -18,6 +20,7 @@ const AMENITIES_OPTIONS = [
 ];
 
 export const AddPropertyForm: React.FC<AddPropertyFormProps> = ({ onSave, onCancel, initialData }) => {
+    const { showToast } = useToast();
     // Default Empty State
     const defaultState: Partial<Property> = {
         id: Date.now().toString(),
@@ -25,6 +28,9 @@ export const AddPropertyForm: React.FC<AddPropertyFormProps> = ({ onSave, onCanc
         description: '',
         location: '',
         price: 0,
+        weekend_price: 0,
+        cleaning_fee: 0,
+        min_stay: 1,
         rating: 5.0,
         reviews: 0,
         guests: 2,
@@ -141,11 +147,11 @@ export const AddPropertyForm: React.FC<AddPropertyFormProps> = ({ onSave, onCanc
                     }));
                 },
                 (error) => {
-                    alert('Erro ao obter localização: ' + error.message);
+                    showToast('Erro ao obter localização: ' + error.message, 'error');
                 }
             );
         } else {
-            alert('Geolocalização não suportada pelo seu navegador.');
+            showToast('Geolocalização não suportada pelo seu navegador.', 'warning');
         }
     };
 
@@ -159,6 +165,7 @@ export const AddPropertyForm: React.FC<AddPropertyFormProps> = ({ onSave, onCanc
             }
         });
     };
+
 
     // --- IMAGE COMPRESSION UTILS ---
     const compressImage = async (file: File): Promise<File> => {
@@ -267,7 +274,7 @@ export const AddPropertyForm: React.FC<AddPropertyFormProps> = ({ onSave, onCanc
             return data.publicUrl;
         } catch (error: any) {
             console.error('Upload Error:', error);
-            alert(`Erro no upload: ${error.message}`);
+            showToast(`Erro no upload: ${error.message}`, 'error');
             return null;
         }
     };
@@ -278,7 +285,7 @@ export const AddPropertyForm: React.FC<AddPropertyFormProps> = ({ onSave, onCanc
         // Removed strict 5MB block since we now compress
         // But keep a sanity check for absurdly huge files (e.g. 50MB+) that might crash browser memory
         if (file.size > 50 * 1024 * 1024) {
-            alert('Arquivo muito grande. Por favor escolha uma imagem menor que 50MB.');
+            showToast('Arquivo muito grande. Imagem menor que 50MB.', 'warning');
             return;
         }
 
@@ -383,12 +390,12 @@ export const AddPropertyForm: React.FC<AddPropertyFormProps> = ({ onSave, onCanc
         }
 
         if (isUploading) {
-            alert("Aguarde o upload das imagens terminar.");
+            showToast("Aguarde o upload das imagens terminar.", "info");
             return;
         }
 
         if (!formData.title || !formData.price || !formData.imageUrl || !formData.ownerPhone || !formData.owner?.name) {
-            alert("Preencha todos os campos obrigatórios:\n- Título\n- Preço\n- Foto Principal\n- Nome do Anfitrião\n- WhatsApp");
+            showToast("Preencha todos os campos obrigatórios.", "warning");
             return;
         }
         onSave(formData as Property);
@@ -470,6 +477,38 @@ export const AddPropertyForm: React.FC<AddPropertyFormProps> = ({ onSave, onCanc
                                 </div>
                                 <div>
                                     <label className="block text-sm font-bold text-gray-700 mb-2 flex items-center gap-2">
+                                        <span className="material-symbols-outlined text-gray-400">event_available</span>
+                                        Preço Final de Semana
+                                    </label>
+                                    <div className="relative">
+                                        <span className="absolute left-4 top-3.5 text-gray-500 font-bold">R$</span>
+                                        <input
+                                            name="weekend_price"
+                                            type="number"
+                                            value={formData.weekend_price || ''}
+                                            onChange={(e) => setFormData(prev => ({ ...prev, weekend_price: Number(e.target.value) }))}
+                                            className="w-full bg-gray-50 border border-gray-200 rounded-xl pl-10 pr-4 py-3.5 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/10 transition-all font-bold text-gray-900"
+                                        />
+                                    </div>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-bold text-gray-700 mb-2 flex items-center gap-2">
+                                        <span className="material-symbols-outlined text-gray-400">cleaning_services</span>
+                                        Taxa de Limpeza
+                                    </label>
+                                    <div className="relative">
+                                        <span className="absolute left-4 top-3.5 text-gray-500 font-bold">R$</span>
+                                        <input
+                                            name="cleaning_fee"
+                                            type="number"
+                                            value={formData.cleaning_fee || ''}
+                                            onChange={(e) => setFormData(prev => ({ ...prev, cleaning_fee: Number(e.target.value) }))}
+                                            className="w-full bg-gray-50 border border-gray-200 rounded-xl pl-10 pr-4 py-3.5 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/10 transition-all font-bold text-gray-900"
+                                        />
+                                    </div>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-bold text-gray-700 mb-2 flex items-center gap-2">
                                         <span className="material-symbols-outlined text-gray-400">location_on</span>
                                         Localização (Cidade/Bairro) *
                                     </label>
@@ -484,44 +523,63 @@ export const AddPropertyForm: React.FC<AddPropertyFormProps> = ({ onSave, onCanc
                             </div>
 
                             {/* Coordinates Section */}
-                            <div className="bg-gray-50 p-4 rounded-2xl border border-gray-100">
-                                <div className="flex justify-between items-center mb-4">
+                            <div className="bg-gray-50 p-6 rounded-2xl border border-gray-100">
+                                <div className="flex justify-between items-center mb-6">
                                     <label className="text-sm font-bold text-gray-700 flex items-center gap-2">
-                                        <span className="material-symbols-outlined text-gray-400">map</span>
+                                        <span className="material-symbols-outlined text-primary">map</span>
                                         Coordenadas (Mapa)
                                     </label>
                                     <button
                                         type="button"
                                         onClick={handleUseCurrentLocation}
-                                        className="text-xs bg-white border border-gray-200 text-primary font-bold px-3 py-1.5 rounded-lg shadow-sm hover:bg-primary hover:text-white transition-all flex items-center gap-1"
+                                        className="text-xs bg-white border border-gray-200 text-primary font-bold px-4 py-2 rounded-xl shadow-sm hover:bg-primary hover:text-white transition-all flex items-center gap-2 active:scale-95"
                                     >
                                         <span className="material-symbols-outlined text-sm">my_location</span>
-                                        Usar minha localização
+                                        Minha Localização
                                     </button>
                                 </div>
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div>
-                                        <label className="block text-xs text-gray-500 mb-1">Latitude</label>
-                                        <input
-                                            type="number"
-                                            step="any"
-                                            value={formData.coordinates?.lat}
-                                            onChange={(e) => handleCoordinateChange('lat', e.target.value)}
-                                            className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm focus:border-primary focus:outline-none"
-                                        />
+
+                                <div className="space-y-6">
+                                    {/* Map Picker Component */}
+                                    <MapLocationPicker
+                                        lat={formData.coordinates?.lat || -20.3387}
+                                        lng={formData.coordinates?.lng || -44.0544}
+                                        onChange={(lat, lng) => {
+                                            setFormData(prev => ({
+                                                ...prev,
+                                                coordinates: { lat, lng }
+                                            }));
+                                        }}
+                                    />
+
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div className="bg-white p-3 rounded-xl border border-gray-100">
+                                            <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">Latitude</label>
+                                            <input
+                                                type="number"
+                                                step="any"
+                                                value={formData.coordinates?.lat}
+                                                onChange={(e) => handleCoordinateChange('lat', e.target.value)}
+                                                className="w-full bg-transparent text-sm font-bold text-gray-900 focus:outline-none"
+                                            />
+                                        </div>
+                                        <div className="bg-white p-3 rounded-xl border border-gray-100">
+                                            <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">Longitude</label>
+                                            <input
+                                                type="number"
+                                                step="any"
+                                                value={formData.coordinates?.lng}
+                                                onChange={(e) => handleCoordinateChange('lng', e.target.value)}
+                                                className="w-full bg-transparent text-sm font-bold text-gray-900 focus:outline-none"
+                                            />
+                                        </div>
                                     </div>
-                                    <div>
-                                        <label className="block text-xs text-gray-500 mb-1">Longitude</label>
-                                        <input
-                                            type="number"
-                                            step="any"
-                                            value={formData.coordinates?.lng}
-                                            onChange={(e) => handleCoordinateChange('lng', e.target.value)}
-                                            className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm focus:border-primary focus:outline-none"
-                                        />
-                                    </div>
+                                    <p className="text-[10px] text-gray-400 text-center italic">
+                                        Dica: Você pode clicar no mapa ou arrastar o marcador para ajustar o local exato.
+                                    </p>
                                 </div>
                             </div>
+
 
                             <div>
                                 <label className="block text-sm font-bold text-gray-700 mb-2 flex items-center gap-2">
@@ -550,7 +608,8 @@ export const AddPropertyForm: React.FC<AddPropertyFormProps> = ({ onSave, onCanc
                                         { field: 'guests', label: 'Hóspedes', icon: 'group' },
                                         { field: 'bedrooms', label: 'Quartos', icon: 'bed' },
                                         { field: 'beds', label: 'Camas', icon: 'single_bed' },
-                                        { field: 'baths', label: 'Banheiros', icon: 'shower' }
+                                        { field: 'baths', label: 'Banheiros', icon: 'shower' },
+                                        { field: 'min_stay', label: 'Estadia Mínima', icon: 'history' }
                                     ].map((item) => (
                                         <div key={item.field} className="bg-gray-50 p-4 rounded-2xl border border-gray-100 flex flex-col items-center">
                                             <div className="text-gray-400 mb-2">

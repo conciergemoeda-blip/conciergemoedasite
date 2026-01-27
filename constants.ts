@@ -18,8 +18,8 @@ export const MOCK_PROPERTIES: Property[] = [
     baths: 4,
     imageUrl: 'https://images.unsplash.com/photo-1566073771259-6a8506099945?q=80&w=2070&auto=format&fit=crop', // Pool/Farm vibe
     gallery: [
-       'https://images.unsplash.com/photo-1566073771259-6a8506099945?q=80&w=2070&auto=format&fit=crop',
-       'https://images.unsplash.com/photo-1583533272956-61386d38e88e?q=80&w=2070&auto=format&fit=crop'
+      'https://images.unsplash.com/photo-1566073771259-6a8506099945?q=80&w=2070&auto=format&fit=crop',
+      'https://images.unsplash.com/photo-1583533272956-61386d38e88e?q=80&w=2070&auto=format&fit=crop'
     ],
     amenities: ['Piscina Grande', 'Playground', 'Churrasqueira', 'Varanda Colonial', 'Wi-Fi'],
     tags: ['Superhost'],
@@ -27,13 +27,13 @@ export const MOCK_PROPERTIES: Property[] = [
     ownerPhone: '5531988881111',
     coordinates: { lat: -20.3520, lng: -44.0250 },
     owner: {
-        name: "Dona Maria Helena",
-        avatar: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?q=80&w=1888&auto=format&fit=crop",
-        isSuperhost: true,
-        joinedDate: "Membro desde 2015",
-        responseRate: "100%",
-        responseTime: "Responde em até 1 hora",
-        bio: "Apaixonada pela vida no campo. Cuido da Fazenda Goiabeira com muito carinho para receber famílias que buscam paz e natureza."
+      name: "Dona Maria Helena",
+      avatar: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?q=80&w=1888&auto=format&fit=crop",
+      isSuperhost: true,
+      joinedDate: "Membro desde 2015",
+      responseRate: "100%",
+      responseTime: "Responde em até 1 hora",
+      bio: "Apaixonada pela vida no campo. Cuido da Fazenda Goiabeira com muito carinho para receber famílias que buscam paz e natureza."
     }
   },
   {
@@ -50,7 +50,7 @@ export const MOCK_PROPERTIES: Property[] = [
     baths: 5,
     imageUrl: 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?q=80&w=1974&auto=format&fit=crop', // Rustic Kitchen/BBQ
     gallery: [
-        'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?q=80&w=1974&auto=format&fit=crop'
+      'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?q=80&w=1974&auto=format&fit=crop'
     ],
     amenities: ['Área Gourmet', 'Fogão a Lenha', 'Churrasqueira', 'Piscina'],
     tags: [],
@@ -58,13 +58,13 @@ export const MOCK_PROPERTIES: Property[] = [
     ownerPhone: '5531988882222',
     coordinates: { lat: -20.3200, lng: -44.0700 },
     owner: {
-        name: "Sr. Antônio",
-        avatar: "https://images.unsplash.com/photo-1552058544-f2b08422138a?q=80&w=1887&auto=format&fit=crop",
-        isSuperhost: false,
-        joinedDate: "Membro desde 2019",
-        responseRate: "90%",
-        responseTime: "Responde em algumas horas",
-        bio: "Adoro churrasco e modas de viola. O Sítio da Barra é o meu lugar preferido para reunir os amigos."
+      name: "Sr. Antônio",
+      avatar: "https://images.unsplash.com/photo-1552058544-f2b08422138a?q=80&w=1887&auto=format&fit=crop",
+      isSuperhost: false,
+      joinedDate: "Membro desde 2019",
+      responseRate: "90%",
+      responseTime: "Responde em algumas horas",
+      bio: "Adoro churrasco e modas de viola. O Sítio da Barra é o meu lugar preferido para reunir os amigos."
     }
   },
   {
@@ -87,13 +87,13 @@ export const MOCK_PROPERTIES: Property[] = [
     ownerPhone: '5531988883333',
     coordinates: { lat: -20.3450, lng: -44.0500 },
     owner: {
-        name: "Cláudia",
-        avatar: "https://images.unsplash.com/photo-1580489944761-15a19d654956?q=80&w=1961&auto=format&fit=crop",
-        isSuperhost: true,
-        joinedDate: "Membro desde 2020",
-        responseRate: "98%",
-        responseTime: "Responde em até 1 hora",
-        bio: "Mãe de três e anfitriã dedicada. Preparei a Fazendinha pensando na segurança e diversão das crianças."
+      name: "Cláudia",
+      avatar: "https://images.unsplash.com/photo-1580489944761-15a19d654956?q=80&w=1961&auto=format&fit=crop",
+      isSuperhost: true,
+      joinedDate: "Membro desde 2020",
+      responseRate: "98%",
+      responseTime: "Responde em até 1 hora",
+      bio: "Mãe de três e anfitriã dedicada. Preparei a Fazendinha pensando na segurança e diversão das crianças."
     }
   },
   {
@@ -116,13 +116,13 @@ export const MOCK_PROPERTIES: Property[] = [
     ownerPhone: '5531988884444',
     coordinates: { lat: -20.3600, lng: -44.0600 },
     owner: {
-        name: "Ricardo",
-        avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=1887&auto=format&fit=crop",
-        isSuperhost: false,
-        joinedDate: "Membro desde 2021",
-        responseRate: "85%",
-        responseTime: "Responde no mesmo dia",
-        bio: "Amante da pesca e da natureza. Venha conhecer nosso lago!"
+      name: "Ricardo",
+      avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=1887&auto=format&fit=crop",
+      isSuperhost: false,
+      joinedDate: "Membro desde 2021",
+      responseRate: "85%",
+      responseTime: "Responde no mesmo dia",
+      bio: "Amante da pesca e da natureza. Venha conhecer nosso lago!"
     }
   },
   {
@@ -145,13 +145,13 @@ export const MOCK_PROPERTIES: Property[] = [
     ownerPhone: '5531988885555',
     coordinates: { lat: -20.3800, lng: -44.0400 },
     owner: {
-        name: "Fernanda Arquiteta",
-        avatar: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?q=80&w=1888&auto=format&fit=crop",
-        isSuperhost: true,
-        joinedDate: "Membro desde 2022",
-        responseRate: "100%",
-        responseTime: "Responde em até 30 min",
-        bio: "Arquiteta apaixonada por design e paisagens. A Lapinha do Sertão é meu projeto de vida."
+      name: "Fernanda Arquiteta",
+      avatar: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?q=80&w=1888&auto=format&fit=crop",
+      isSuperhost: true,
+      joinedDate: "Membro desde 2022",
+      responseRate: "100%",
+      responseTime: "Responde em até 30 min",
+      bio: "Arquiteta apaixonada por design e paisagens. A Lapinha do Sertão é meu projeto de vida."
     }
   },
   {
@@ -174,13 +174,13 @@ export const MOCK_PROPERTIES: Property[] = [
     ownerPhone: '5531988886666',
     coordinates: { lat: -20.3100, lng: -44.0100 },
     owner: {
-        name: "Pousada Luas",
-        avatar: "https://images.unsplash.com/photo-1596815064285-45ed8a9c0463?q=80&w=1889&auto=format&fit=crop",
-        isSuperhost: true,
-        joinedDate: "Membro desde 2017",
-        responseRate: "100%",
-        responseTime: "Responde imediatamente",
-        bio: "Nossa equipe está pronta para tornar seu fim de semana romântico inesquecível na Serra da Moeda."
+      name: "Pousada Luas",
+      avatar: "https://images.unsplash.com/photo-1596815064285-45ed8a9c0463?q=80&w=1889&auto=format&fit=crop",
+      isSuperhost: true,
+      joinedDate: "Membro desde 2017",
+      responseRate: "100%",
+      responseTime: "Responde imediatamente",
+      bio: "Nossa equipe está pronta para tornar seu fim de semana romântico inesquecível na Serra da Moeda."
     }
   }
 ];
@@ -200,8 +200,14 @@ export const MOCK_STATS: Stats = {
   totalRevenue: 32450
 };
 
+export const SITE_CONFIG = {
+  whatsapp: '5531999999999',
+  formattedWhatsapp: '(31) 99999-9999',
+  email: 'contato@conciergemoeda.com.br'
+};
+
 export const ADMIN_USER = {
-    name: 'Ricardo Admin',
-    email: 'ricardo@moeda.com',
-    avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?q=80&w=2070&auto=format&fit=crop'
+  name: 'Ricardo Administrador',
+  email: 'ricardo@moeda.com',
+  avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?q=80&w=2070&auto=format&fit=crop'
 };

@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { PropertyCard } from '../components/PropertyCard';
 import { PropertySkeleton } from '../components/PropertySkeleton';
-import { Calendar } from '../components/Calendar';
 import { EmptyState } from '../components/EmptyState';
 import { useProperties } from '../hooks/useProperties';
 import { Page, Property } from '../types';
@@ -23,10 +22,10 @@ const COMMON_AMENITIES = [
 ];
 
 const POPULAR_LOCATIONS = [
-    { name: 'Moeda, MG', type: 'Cidade', icon: 'location_city' },
-    { name: 'Serra da Moeda', type: 'Montanha', icon: 'landscape' },
-    { name: 'Taquaraçu', type: 'Vilarejo', icon: 'holiday_village' },
-    { name: 'Barra', type: 'Vilarejo', icon: 'holiday_village' },
+    { name: 'Moeda (Cidade)', type: 'Centro', icon: 'location_city' },
+    { name: 'Serra da Moeda', type: 'Região', icon: 'landscape' },
+    { name: 'Taquaraçu', type: 'Povoado', icon: 'holiday_village' },
+    { name: 'Barra', type: 'Povoado', icon: 'holiday_village' },
     { name: 'Sertão', type: 'Zona Rural', icon: 'nature_people' }
 ];
 
@@ -43,14 +42,11 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onPropertySelect
     const [guestFilter, setGuestFilter] = useState<string>(''); // For guest picker string representation
     const [guestsFilter, setGuestsFilter] = useState(2); // Numeric filter logic
 
-    const [checkIn, setCheckIn] = useState<Date | null>(null);
-    const [checkOut, setCheckOut] = useState<Date | null>(null);
 
     // Parallax scroll state
     const [scrollY, setScrollY] = useState(0);
 
     // Calendar & Picker States
-    const [isCalendarOpen, setIsCalendarOpen] = useState(false);
     const [isGuestPickerOpen, setIsGuestPickerOpen] = useState(false);
     const [isLocationPickerOpen, setIsLocationPickerOpen] = useState(false);
 
@@ -161,47 +157,6 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onPropertySelect
         setIsLocationPickerOpen(false);
     };
 
-    // Calendar Logic
-    const handleDateSelect = (date: Date) => {
-        if (!checkIn || (checkIn && checkOut)) {
-            setCheckIn(date);
-            setCheckOut(null);
-        } else {
-            if (date < checkIn) {
-                setCheckIn(date);
-            } else if (date.getTime() === checkIn.getTime()) {
-                setCheckIn(date);
-                setCheckOut(null);
-            } else {
-                setCheckOut(date);
-                // Do not auto-close, let user confirm
-            }
-        }
-    };
-
-    const clearDates = (e?: React.MouseEvent) => {
-        e?.stopPropagation();
-        setCheckIn(null);
-        setCheckOut(null);
-    };
-
-    const formatDate = (date: Date | null) => {
-        if (!date) return 'DD/MM';
-        return date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
-    };
-
-    const formatDateFull = (date: Date | null) => {
-        if (!date) return '--/--/----';
-        return date.toLocaleDateString('pt-BR');
-    };
-
-    const nightsCount = useMemo(() => {
-        if (checkIn && checkOut) {
-            const diffTime = Math.abs(checkOut.getTime() - checkIn.getTime());
-            return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-        }
-        return 0;
-    }, [checkIn, checkOut]);
 
 
     const handleApplyFilters = () => {
@@ -215,8 +170,6 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onPropertySelect
     const clearAllFilters = () => {
         setGuestFilter('');
         setGuestsFilter(2);
-        setCheckIn(null);
-        setCheckOut(null);
         setLocationFilter('');
         setSearchTerm('');
         setMinPrice('');
@@ -232,7 +185,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onPropertySelect
 
     // SEO: Set Title
     useEffect(() => {
-        document.title = "Concierge Moeda | Início";
+        document.title = "Aluguel de Temporada Moeda MG | Chalés e Sítios";
     }, []);
 
     return (
@@ -260,12 +213,12 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onPropertySelect
 
                     <div className="relative z-10 text-center px-4 max-w-4xl mx-auto space-y-4 animate-fade-in-up pt-12 md:pt-0">
                         <div className="inline-block bg-white/20 backdrop-blur-md px-6 py-2 rounded-full border border-white/30 text-white font-bold text-sm tracking-widest uppercase mb-2 shadow-lg">
-                            Serra da Moeda &bull; Minas Gerais
+                            Moeda &bull; Minas Gerais
                         </div>
 
                         <h1 className="font-serif text-4xl sm:text-5xl md:text-7xl font-bold text-white mb-4 leading-tight drop-shadow-2xl">
-                            Sítios e Chalés na <br className="md:hidden" />
-                            <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-200 to-white">Serra da Moeda</span>
+                            Sítios e Chalés em <br className="md:hidden" />
+                            <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-200 to-white">Moeda MG</span>
                         </h1>
 
                         <p className="text-base md:text-xl text-gray-200 max-w-xl font-light leading-relaxed mx-auto">
@@ -350,105 +303,6 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onPropertySelect
                                 )}
                             </div>
 
-                            {/* Dates Container */}
-                            <div className="flex w-full md:w-auto md:flex-1 relative">
-                                {/* Check-in Trigger */}
-                                <div
-                                    onClick={() => setIsCalendarOpen(true)}
-                                    className={`flex-1 px-4 md:px-6 py-2 md:py-3 border-b md:border-b-0 md:border-r border-r md:border-r-gray-100 border-gray-100 hover:bg-gray-50 rounded-2xl md:rounded-none transition-colors cursor-pointer group ${isCalendarOpen ? 'bg-gray-50' : ''}`}
-                                >
-                                    <label className="block text-[10px] md:text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Check-in</label>
-                                    <div className={`text-sm md:text-base py-1 md:py-0 font-semibold truncate ${checkIn ? 'text-gray-900' : 'text-gray-400'}`}>
-                                        {formatDateFull(checkIn)}
-                                    </div>
-                                </div>
-
-                                {/* Check-out Trigger */}
-                                <div
-                                    onClick={() => setIsCalendarOpen(true)}
-                                    className={`flex-1 px-4 md:px-6 py-2 md:py-3 border-b md:border-b-0 md:border-r border-gray-100 hover:bg-gray-50 rounded-2xl md:rounded-none transition-colors cursor-pointer group ${isCalendarOpen ? 'bg-gray-50' : ''} relative`}
-                                >
-                                    <div className="flex justify-between items-center w-full">
-                                        <label className="block text-[10px] md:text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Check-out</label>
-                                        {/* Prominent Night Count Badge in Search Bar */}
-                                        {nightsCount > 0 && (
-                                            <span className="bg-primary/10 text-primary-dark text-[10px] font-bold px-1.5 py-0.5 rounded-full md:mr-2">
-                                                {nightsCount} noites
-                                            </span>
-                                        )}
-                                    </div>
-                                    <div className={`text-sm md:text-base py-1 md:py-0 font-semibold truncate ${checkOut ? 'text-gray-900' : 'text-gray-400'}`}>
-                                        {formatDateFull(checkOut)}
-                                    </div>
-                                </div>
-
-                                {/* Calendar Popover */}
-                                {isCalendarOpen && (
-                                    <>
-                                        <div
-                                            className="fixed inset-0 bg-black/30 z-[60] backdrop-blur-[2px] transition-opacity"
-                                            onClick={() => setIsCalendarOpen(false)}
-                                        ></div>
-                                        <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[90vw] max-w-[400px] max-h-[85vh] overflow-y-auto md:overflow-visible md:max-h-none md:absolute md:top-[calc(100%+16px)] md:left-auto md:right-0 md:translate-y-0 md:translate-x-0 md:w-[450px] bg-white rounded-3xl shadow-2xl z-[70] animate-fade-in-up">
-                                            <div className="flex justify-between items-center px-6 py-4 border-b border-gray-100">
-                                                <h3 className="font-bold text-lg text-gray-900">Selecione as datas</h3>
-                                                <button
-                                                    onClick={(e) => { e.stopPropagation(); setIsCalendarOpen(false); }}
-                                                    className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-                                                >
-                                                    <span className="material-symbols-outlined text-gray-500">close</span>
-                                                </button>
-                                            </div>
-                                            <div className="p-6">
-                                                {/* Modal Summary - Enhanced Clarity */}
-                                                <div className={`rounded-2xl p-4 mb-6 flex justify-between items-center border transition-colors ${nightsCount > 0 ? 'bg-primary/5 border-primary/20' : 'bg-gray-50 border-gray-100'}`}>
-                                                    <div>
-                                                        <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Sua Viagem</div>
-                                                        <div className="flex items-center gap-2 text-sm font-semibold text-gray-900">
-                                                            <span>{checkIn ? formatDate(checkIn) : 'Check-in'}</span>
-                                                            <span className="material-symbols-outlined text-sm text-gray-400">arrow_forward</span>
-                                                            <span>{checkOut ? formatDate(checkOut) : 'Check-out'}</span>
-                                                        </div>
-                                                    </div>
-                                                    {nightsCount > 0 ? (
-                                                        <div className="bg-primary text-white border border-primary px-3 py-1.5 rounded-lg shadow-sm flex items-center gap-1 animate-fade-in">
-                                                            <span className="material-symbols-outlined text-sm">nights_stay</span>
-                                                            <span className="text-xs font-bold">{nightsCount} noites</span>
-                                                        </div>
-                                                    ) : (
-                                                        <span className="text-xs text-gray-400 italic font-medium">Selecione o período</span>
-                                                    )}
-                                                </div>
-                                                <Calendar
-                                                    checkIn={checkIn}
-                                                    checkOut={checkOut}
-                                                    onDateSelect={handleDateSelect}
-                                                    className="w-full"
-                                                />
-                                            </div>
-                                            <div className="flex justify-between items-center px-6 py-4 border-t border-gray-100 bg-white">
-                                                <button
-                                                    onClick={clearDates}
-                                                    className="text-sm font-bold text-gray-600 underline hover:text-gray-900 flex items-center gap-1 transition-colors"
-                                                >
-                                                    <span className="material-symbols-outlined text-lg">delete</span>
-                                                    Limpar datas
-                                                </button>
-                                                {/* Clear Filters Button */}
-                                                {(searchTerm || locationFilter || minPrice || maxPrice || minBaths > 0 || selectedAmenities.length > 0) && (
-                                                    <button
-                                                        onClick={clearAllFilters}
-                                                        className="flex items-center gap-2 px-4 py-2 text-gray-500 hover:text-red-500 transition-colors text-sm font-medium bg-white rounded-full border border-gray-200 hover:border-red-200 shadow-sm"
-                                                    >
-                                                        <span className="material-symbols-outlined text-lg">close</span>
-                                                        Limpar Filtros
-                                                    </button>
-                                                )}
-                                            </div>
-                                        </div>
-                                    </>
-                                )}
-                            </div>
 
                             {/* Guests - Replaced Input with Stepper Popover */}
                             <div className="flex-1 px-4 md:px-6 py-2 md:py-3 w-full border-b md:border-b-0 md:border-r border-gray-100 hover:bg-gray-50 rounded-2xl transition-colors cursor-pointer group relative">
@@ -751,8 +605,8 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onPropertySelect
                             <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center text-primary mb-6 transition-all duration-300 group-hover:scale-110 group-hover:bg-primary group-hover:shadow-lg">
                                 <span className="material-symbols-outlined text-3xl icon-filled group-hover:text-white transition-colors">verified_user</span>
                             </div>
-                            <h3 className="font-bold text-xl mb-3 group-hover:text-primary transition-colors">Segurança Garantida</h3>
-                            <p className="text-gray-500 leading-relaxed">Imóveis verificados presencialmente e pagamentos protegidos.</p>
+                            <h3 className="font-bold text-xl mb-3 group-hover:text-primary transition-colors">Curadoria Premium</h3>
+                            <p className="text-gray-500 leading-relaxed">Propriedades selecionadas e verificadas presencialmente para sua total tranquilidade.</p>
                         </div>
 
                         {/* Feature 2 */}
@@ -760,8 +614,8 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onPropertySelect
                             <div className="w-16 h-16 bg-secondary/10 rounded-full flex items-center justify-center text-secondary mb-6 transition-all duration-300 group-hover:scale-110 group-hover:bg-secondary group-hover:shadow-lg">
                                 <span className="material-symbols-outlined text-3xl icon-filled group-hover:text-white transition-colors">forum</span>
                             </div>
-                            <h3 className="font-bold text-xl mb-3 group-hover:text-secondary transition-colors">Atendimento Humanizado</h3>
-                            <p className="text-gray-500 leading-relaxed">Concierge dedicado via WhatsApp para auxiliar em toda a sua estadia.</p>
+                            <h3 className="font-bold text-xl mb-3 group-hover:text-secondary transition-colors">Suporte Personalizado</h3>
+                            <p className="text-gray-500 leading-relaxed">Tire dúvidas e receba indicações sobre a região diretamente pelo nosso WhatsApp.</p>
                         </div>
 
                         {/* Feature 3 */}

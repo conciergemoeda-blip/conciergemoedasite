@@ -1,10 +1,15 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { LOGO_BASE64 } from '../constants_logo';
-import { ADMIN_USER, MOCK_LEADS, MOCK_STATS } from '../constants';
+import { ADMIN_USER, MOCK_LEADS, MOCK_STATS, SITE_CONFIG } from '../constants';
+import { supabase } from '../lib/supabase';
+import { AuthProvider, useAuth } from '../contexts/AuthContext';
+import { useToast } from '../components/Toast';
 import { Page, Property, Lead } from '../types';
 import { AddPropertyForm } from '../components/AddPropertyForm';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { useProperties } from '../hooks/useProperties';
+import { useSettings } from '../contexts/SettingsContext';
+
 
 type TabType = 'DASHBOARD' | 'PROPERTIES' | 'SETTINGS';
 
@@ -13,6 +18,8 @@ interface AdminDashboardProps {
 }
 
 export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) => {
+    const { user, signOut } = useAuth();
+    const { showToast: triggerGlobalToast } = useToast();
     const [activeTab, setActiveTab] = useState<TabType>('DASHBOARD');
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
@@ -24,12 +31,36 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) =>
     const [editingProperty, setEditingProperty] = useState<Property | null>(null);
     const [propertySearch, setPropertySearch] = useState('');
     const [propertyStatusFilter, setPropertyStatusFilter] = useState<'ALL' | 'ACTIVE' | 'PAUSED'>('ALL');
-    const [showToast, setShowToast] = useState<{ message: string, visible: boolean }>({ message: '', visible: false });
     const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+    const [isChangingPassword, setIsChangingPassword] = useState(false);
+    const [newPassword, setNewPassword] = useState('');
+    const [currentPassword, setCurrentPassword] = useState('');
+    const [passwordLoading, setPasswordLoading] = useState(false);
+
+    // Profile State
+    const fileInputRef = useRef<HTMLInputElement>(null);
+    const [profileName, setProfileName] = useState(user?.user_metadata?.full_name || ADMIN_USER.name);
+    const [profileAvatar, setProfileAvatar] = useState(user?.user_metadata?.avatar_url || ADMIN_USER.avatar);
+    const [profileLoading, setProfileLoading] = useState(false);
 
     // Leads State (Mock for now, as CRM is external via WhatsApp)
     const [leads, setLeads] = useState<Lead[]>(MOCK_LEADS);
     const [leadFilter, setLeadFilter] = useState<'ALL' | 'Novo' | 'Contatado' | 'Fechado'>('ALL');
+
+    // Settings State
+    const { settings, updateSettings, loading: settingsLoading } = useSettings();
+    const [inputWhatsapp, setInputWhatsapp] = useState(settings.whatsapp.replace('55', ''));
+    const [inputEmail, setInputEmail] = useState(settings.email);
+    const [isSavingSettings, setIsSavingSettings] = useState(false);
+
+    // Sync settings when they load from DB
+    useEffect(() => {
+        if (!settingsLoading) {
+            setInputWhatsapp(settings.whatsapp.replace('55', ''));
+            setInputEmail(settings.email);
+        }
+    }, [settings, settingsLoading]);
+
 
     // Chart Data (Mock)
     const data = [
@@ -68,9 +99,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) =>
 
     // --- Actions ---
 
-    const triggerToast = (message: string) => {
-        setShowToast({ message, visible: true });
-        setTimeout(() => setShowToast({ message: '', visible: false }), 3000);
+    const triggerToast = (message: string, type: any = 'success') => {
+        triggerGlobalToast(message, type);
     };
 
     const handleSaveProperty = async (propertyData: Property) => {
@@ -137,47 +167,292 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) =>
         triggerToast('Status do lead atualizado!');
     };
 
+    const handlePasswordChange = async (e: React.FormEvent) => {
+        e.preventDefault();
+
+        if (!currentPassword) {
+            triggerToast('Por favor, informe sua senha atual.');
+            return;
+        }
+
+        if (newPassword.length < 6) {
+            triggerToast('A nova senha deve ter pelo menos 6 caracteres.');
+            return;
+        }
+
+        setPasswordLoading(true);
+        try {
+            // Step 1: Verify current password by attempting a re-login
+            const { error: signInError } = await supabase.auth.signInWithPassword({
+                email: user?.email || '',
+                password: currentPassword
+            });
+
+            if (signInError) {
+                throw new Error('A senha atual está incorreta.');
+            }
+
+            // Step 2: If verification passed, update to the new password
+            const { error: updateError } = await supabase.auth.updateUser({
+                password: newPassword
+            });
+
+            if (updateError) throw updateError;
+
+            triggerToast('Senha alterada com sucesso!');
+            setIsChangingPassword(false);
+            setNewPassword('');
+            setCurrentPassword('');
+        } catch (err: any) {
+            console.error(err);
+            triggerToast(err.message || 'Erro ao alterar senha.');
+        } finally {
+            setPasswordLoading(false);
+        }
+    };
+
+    const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        // Visual feedback immediate
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            setProfileAvatar(event.target?.result as string);
+        };
+        reader.readAsDataURL(file);
+
+        // Upload to Supabase Storage
+        setProfileLoading(true);
+        try {
+            const fileExt = file.name.split('.').pop();
+            const fileName = `${Math.random()}.${fileExt}`;
+            const filePath = `avatars/${fileName}`;
+
+            let { error: uploadError } = await supabase.storage
+                .from('avatars')
+                .upload(filePath, file);
+
+            if (uploadError) throw uploadError;
+
+            const { data } = supabase.storage
+                .from('avatars')
+                .getPublicUrl(filePath);
+
+            setProfileAvatar(data.publicUrl);
+            triggerToast('Foto carregada com sucesso!');
+        } catch (error: any) {
+            console.error('Error uploading avatar:', error.message);
+            triggerToast('Erro no upload. Usando prévia local.');
+        } finally {
+            setProfileLoading(false);
+        }
+    };
+
+    const handleSaveProfile = async () => {
+        setProfileLoading(true);
+        try {
+            const { error } = await supabase.auth.updateUser({
+                data: {
+                    full_name: profileName,
+                    avatar_url: profileAvatar
+                }
+            });
+
+            if (error) throw error;
+            triggerToast('Perfil atualizado com sucesso!');
+        } catch (error: any) {
+            console.error('Error saving profile:', error.message);
+            triggerToast('Erro ao salvar perfil.');
+        } finally {
+            setProfileLoading(false);
+        }
+    };
+
+    const handleSaveSettings = async () => {
+        setIsSavingSettings(true);
+        try {
+            const cleanWhatsapp = `55${inputWhatsapp.replace(/\D/g, '')}`;
+            await updateSettings({
+                whatsapp: cleanWhatsapp,
+                email: inputEmail
+            });
+            triggerToast('Configurações atualizadas!');
+        } catch (error) {
+            console.error(error);
+            triggerToast('Erro ao atualizar configurações.', 'error');
+        } finally {
+            setIsSavingSettings(false);
+        }
+    };
+
+
     const renderContent = () => {
         switch (activeTab) {
             case 'SETTINGS':
                 return (
                     <div className="p-4 md:p-8 animate-fade-in max-w-4xl mx-auto pb-24 md:pb-8">
-                        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 md:p-8">
-                            <h2 className="text-xl font-bold text-gray-900 font-serif mb-6 flex items-center gap-2">
-                                <span className="material-symbols-outlined text-primary">manage_accounts</span>
-                                Configurações do Concierge
-                            </h2>
-
-                            <div className="space-y-6">
-                                <div>
-                                    <label className="block text-sm font-bold text-gray-700 mb-2">WhatsApp do Concierge (Admin)</label>
-                                    <p className="text-xs text-gray-500 mb-3">Este é o número que receberá as mensagens quando alguém clicar em "Anuncie seu Imóvel" no site.</p>
-                                    <div className="flex gap-4">
-                                        <div className="relative flex-1 max-w-md">
-                                            <span className="absolute left-4 top-3.5 text-gray-500 font-bold flex items-center gap-1 border-r border-gray-200 pr-2">
-                                                <img src="https://flagcdn.com/w20/br.png" alt="BR" className="w-5 rounded-sm" />
-                                                +55
-                                            </span>
-                                            <input
-                                                type="text"
-                                                defaultValue="31999999999"
-                                                className="w-full bg-gray-50 border border-gray-200 rounded-xl pl-24 pr-4 py-3.5 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/10 transition-all font-mono font-medium"
-                                            />
+                        <div className="space-y-6">
+                            {/* Profile Section */}
+                            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 md:p-8">
+                                <h2 className="text-xl font-bold text-gray-900 font-serif mb-6 flex items-center gap-2">
+                                    <span className="material-symbols-outlined text-primary">person</span>
+                                    Perfil do Proprietário
+                                </h2>
+                                <div className="flex flex-col md:flex-row gap-6 items-center md:items-start">
+                                    <div className="relative group">
+                                        <img src={profileAvatar} alt="Avatar" className="w-24 h-24 rounded-full object-cover border-4 border-gray-50 shadow-md" />
+                                        <div
+                                            onClick={() => fileInputRef.current?.click()}
+                                            className="absolute inset-0 flex items-center justify-center bg-black/40 rounded-full opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+                                        >
+                                            <span className="material-symbols-outlined text-white">photo_camera</span>
                                         </div>
-                                        <button className="bg-primary hover:bg-primary-dark text-white px-6 py-3 rounded-xl font-bold shadow-lg transition-all active:scale-95 flex items-center gap-2">
-                                            <span className="material-symbols-outlined">save</span>
-                                            Salvar
+                                        <input
+                                            type="file"
+                                            ref={fileInputRef}
+                                            onChange={handleAvatarChange}
+                                            className="hidden"
+                                            accept="image/*"
+                                        />
+                                    </div>
+                                    <div className="flex-1 space-y-4 w-full text-center md:text-left">
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <div>
+                                                <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Nome de Exibição</label>
+                                                <input
+                                                    type="text"
+                                                    value={profileName}
+                                                    onChange={(e) => setProfileName(e.target.value)}
+                                                    className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:border-primary transition-all font-bold text-gray-900"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Email de Login</label>
+                                                <input
+                                                    type="text"
+                                                    disabled
+                                                    value={user?.email || ADMIN_USER.email}
+                                                    className="w-full bg-gray-100 border border-gray-200 rounded-xl px-4 py-3 text-gray-500 cursor-not-allowed"
+                                                />
+                                            </div>
+                                        </div>
+                                        <button
+                                            onClick={handleSaveProfile}
+                                            disabled={profileLoading}
+                                            className="bg-primary hover:bg-primary-dark text-white px-6 py-3 rounded-xl font-bold shadow-lg transition-all active:scale-95 flex items-center gap-2 mx-auto md:mx-0 disabled:opacity-50"
+                                        >
+                                            <span className="material-symbols-outlined">{profileLoading ? 'sync' : 'save'}</span>
+                                            {profileLoading ? 'Salvando...' : 'Salvar Perfil'}
                                         </button>
                                     </div>
                                 </div>
+                            </div>
 
-                                <div className="border-t border-gray-100 pt-6">
-                                    <h3 className="text-sm font-bold text-gray-900 mb-4">Segurança</h3>
-                                    <button className="text-gray-600 hover:text-gray-900 font-medium text-sm flex items-center gap-2 border border-gray-200 px-4 py-2 rounded-lg hover:bg-gray-50 transition-colors">
+                            {/* Contact Section */}
+                            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 md:p-8">
+                                <h2 className="text-xl font-bold text-gray-900 font-serif mb-6 flex items-center gap-2">
+                                    <span className="material-symbols-outlined text-primary">contact_support</span>
+                                    Contatos do Sistema (Rodapé e WhatsApp)
+                                </h2>
+
+                                <div className="space-y-6">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        <div>
+                                            <label className="block text-sm font-bold text-gray-700 mb-2">WhatsApp de Contato</label>
+                                            <div className="relative">
+                                                <span className="absolute left-4 top-3 text-gray-500 font-bold border-r border-gray-200 pr-2">+55</span>
+                                                <input
+                                                    type="text"
+                                                    value={inputWhatsapp}
+                                                    onChange={(e) => setInputWhatsapp(e.target.value)}
+                                                    className="w-full bg-gray-50 border border-gray-200 rounded-xl pl-16 pr-4 py-3 focus:outline-none focus:border-primary transition-all font-mono"
+                                                />
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-bold text-gray-700 mb-2">Email de Contato</label>
+                                            <input
+                                                type="email"
+                                                value={inputEmail}
+                                                onChange={(e) => setInputEmail(e.target.value)}
+                                                className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:border-primary transition-all"
+                                            />
+                                        </div>
+                                    </div>
+                                    <div className="flex justify-end">
+                                        <button
+                                            onClick={handleSaveSettings}
+                                            disabled={isSavingSettings}
+                                            className="bg-primary hover:bg-primary-dark text-white px-6 py-3 rounded-xl font-bold shadow-lg transition-all active:scale-95 flex items-center gap-2 disabled:opacity-50"
+                                        >
+                                            <span className="material-symbols-outlined">{isSavingSettings ? 'sync' : 'save'}</span>
+                                            {isSavingSettings ? 'Salvando...' : 'Atualizar Contatos'}
+                                        </button>
+                                    </div>
+
+                                </div>
+                            </div>
+
+                            {/* Security Section */}
+                            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 md:p-8">
+                                <h2 className="text-xl font-bold text-gray-900 font-serif mb-6 flex items-center gap-2">
+                                    <span className="material-symbols-outlined text-primary">security</span>
+                                    Segurança e Acesso
+                                </h2>
+
+                                {isChangingPassword ? (
+                                    <form onSubmit={handlePasswordChange} className="space-y-4 animate-fade-in animate-scale-in">
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <div>
+                                                <label className="block text-sm font-bold text-gray-700 mb-2">Senha Atual</label>
+                                                <input
+                                                    type="password"
+                                                    value={currentPassword}
+                                                    onChange={(e) => setCurrentPassword(e.target.value)}
+                                                    placeholder="Digite sua senha atual"
+                                                    className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:border-primary transition-all font-mono"
+                                                    required
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-sm font-bold text-gray-700 mb-2">Nova Senha</label>
+                                                <input
+                                                    type="password"
+                                                    value={newPassword}
+                                                    onChange={(e) => setNewPassword(e.target.value)}
+                                                    placeholder="Mínimo 6 caracteres"
+                                                    className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:border-primary transition-all font-mono"
+                                                    required
+                                                />
+                                            </div>
+                                        </div>
+                                        <div className="flex gap-3 pt-2">
+                                            <button
+                                                type="submit"
+                                                disabled={passwordLoading}
+                                                className="flex-1 bg-primary hover:bg-primary-dark text-white py-3 rounded-xl font-bold shadow-lg transition-all active:scale-95 disabled:opacity-50"
+                                            >
+                                                {passwordLoading ? 'Verificando e Atualizando...' : 'Confirmar Nova Senha'}
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => { setIsChangingPassword(false); setNewPassword(''); setCurrentPassword(''); }}
+                                                className="px-6 py-3 border border-gray-200 text-gray-600 rounded-xl font-bold hover:bg-gray-50"
+                                            >
+                                                Cancelar
+                                            </button>
+                                        </div>
+                                    </form>
+                                ) : (
+                                    <button
+                                        onClick={() => setIsChangingPassword(true)}
+                                        className="text-primary hover:text-primary-dark font-bold text-sm flex items-center gap-2 border border-primary/20 px-6 py-3 rounded-xl hover:bg-primary/5 transition-all active:scale-95"
+                                    >
                                         <span className="material-symbols-outlined">lock_reset</span>
                                         Alterar Senha de Acesso
                                     </button>
-                                </div>
+                                )}
                             </div>
                         </div>
                     </div>
@@ -277,7 +552,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) =>
                                                 </p>
                                                 <div className="flex items-center gap-2 mt-2">
                                                     <div className="font-bold text-sm text-primary">{formatCurrency(prop.price)}</div>
-                                                    <div className="text-[10px] text-gray-400">/ noite</div>
+                                                    <div className="text-[10px] text-gray-400">/ diária</div>
                                                 </div>
                                             </div>
                                         </div>
@@ -525,7 +800,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) =>
                                 <div className="text-2xl md:text-3xl font-bold text-gray-900 mb-1">
                                     {formatCurrency(properties.filter(p => !p.tags.includes('Pausado' as any)).reduce((acc, curr) => acc + (Number(curr.price) || 0), 0) * 10)}
                                 </div>
-                                <div className="text-sm font-medium text-gray-500">Potencial Mensal (Est. 10 noites)</div>
+                                <div className="text-sm font-medium text-gray-500">Potencial Mensal (Est. 10 diárias)</div>
                             </div>
                         </div>
 
@@ -545,16 +820,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) =>
     };
 
     return (
-        <div className="flex h-screen bg-gray-50 overflow-hidden relative">
-
-            {/* Toast Notification */}
-            {showToast.visible && (
-                <div className="fixed top-24 right-4 z-[100] bg-gray-900 text-white px-6 py-3 rounded-xl shadow-xl flex items-center gap-3 animate-fade-in-down">
-                    <span className="material-symbols-outlined text-green-400">check_circle</span>
-                    <span className="font-bold text-sm">{showToast.message}</span>
-                </div>
-            )}
-
+        <div className="flex h-screen bg-gray-50 font-sans animate-fade-in overflow-hidden relative">
             {/* Mobile Sidebar Overlay with Blur */}
             <div
                 className={`fixed inset-0 bg-black/50 z-40 md:hidden backdrop-blur-sm transition-opacity duration-300 ${isSidebarOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}
@@ -569,7 +835,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) =>
                 <div className="p-6 md:p-8 flex justify-between items-center">
                     <div className="flex items-center gap-3">
                         <div className="p-1">
-                            <img src="/pwa-192x192.png" alt="Logo" className="w-12 h-12 object-contain" />
+                            <img src={LOGO_BASE64} alt="Logo" className="w-12 h-12 object-contain" />
                         </div>
                         <div>
                             <span className="font-serif font-bold text-xl tracking-wide block">Painel</span>
@@ -627,13 +893,16 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) =>
 
                 <div className="p-4 md:p-6 bg-black/20 m-4 rounded-2xl backdrop-blur-sm">
                     <div className="flex items-center gap-3">
-                        <img src={ADMIN_USER.avatar} alt="Admin" className="w-10 h-10 rounded-full border-2 border-white/30 shadow-sm" />
+                        <img src={profileAvatar} alt="Admin" className="w-10 h-10 rounded-full border-2 border-white/30 shadow-sm object-cover" />
                         <div className="flex flex-col overflow-hidden">
-                            <span className="text-sm font-bold truncate">{ADMIN_USER.name}</span>
+                            <span className="text-sm font-bold truncate">{profileName}</span>
                             <span className="text-xs opacity-60">Online Agora</span>
                         </div>
                         <button
-                            onClick={() => onNavigate('HOME')}
+                            onClick={async () => {
+                                await signOut();
+                                onNavigate('HOME');
+                            }}
                             className="ml-auto p-2 md:p-1.5 hover:bg-white/10 rounded-full text-white/70 hover:text-white transition-colors"
                             title="Sair"
                         >

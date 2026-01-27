@@ -1,6 +1,5 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { Property } from '../types';
-import { Calendar } from '../components/Calendar';
 import { PropertyMap } from '../components/PropertyMap';
 import { ReviewSection } from '../components/ReviewSection';
 
@@ -56,9 +55,6 @@ export const PropertyDetails: React.FC<PropertyDetailsProps> = ({ property, onBa
             setCurrentImageIndex((prev) => (prev - 1 + allImages.length) % allImages.length);
         }
     };
-    const [checkIn, setCheckIn] = useState<Date | null>(null);
-    const [checkOut, setCheckOut] = useState<Date | null>(null);
-
     // Widget State
     const [isWidgetCalendarOpen, setIsWidgetCalendarOpen] = useState(false);
     const widgetRef = useRef<HTMLDivElement>(null);
@@ -67,67 +63,6 @@ export const PropertyDetails: React.FC<PropertyDetailsProps> = ({ property, onBa
     const [showShareToast, setShowShareToast] = useState(false);
     const [isSaved, setIsSaved] = useState(false);
 
-    // Pricing Constants
-    const CLEANING_FEE = 150;
-
-    // Click Outside Listener to close widget calendar
-    useEffect(() => {
-        function handleClickOutside(event: MouseEvent) {
-            if (widgetRef.current && !widgetRef.current.contains(event.target as Node)) {
-                setIsWidgetCalendarOpen(false);
-            }
-        }
-        document.addEventListener("mousedown", handleClickOutside);
-        return () => {
-            document.removeEventListener("mousedown", handleClickOutside);
-        };
-    }, []);
-
-    // Calendar Logic
-    const handleDateSelect = (date: Date) => {
-        if (!checkIn || (checkIn && checkOut)) {
-            setCheckIn(date);
-            setCheckOut(null);
-        } else {
-            // If clicking before checkin, reset start date
-            if (date < checkIn) {
-                setCheckIn(date);
-            } else if (date.getTime() === checkIn.getTime()) {
-                // Clicked same day twice? maybe allow deselect or just ignore. 
-                // For now, let's treat it as resetting checkin to ensure 1 night min
-                setCheckIn(date);
-                setCheckOut(null);
-            } else {
-                setCheckOut(date);
-            }
-        }
-    };
-
-    const clearDates = (e?: React.MouseEvent) => {
-        e?.stopPropagation();
-        setCheckIn(null);
-        setCheckOut(null);
-    };
-
-    const nightsCount = useMemo(() => {
-        if (checkIn && checkOut) {
-            const diffTime = Math.abs(checkOut.getTime() - checkIn.getTime());
-            return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-        }
-        return 0;
-    }, [checkIn, checkOut]);
-
-    const totalPrice = useMemo(() => {
-        const nights = nightsCount > 0 ? nightsCount : 0;
-        return (nights * property.price) + CLEANING_FEE;
-    }, [nightsCount, property.price]);
-
-    // Format Date Helper
-    const formatDate = (date: Date | null) => {
-        if (!date) return 'Adicionar data';
-        return date.toLocaleDateString('pt-BR');
-    };
-
     const formatCurrency = (val: number) => {
         return val.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
     };
@@ -135,9 +70,6 @@ export const PropertyDetails: React.FC<PropertyDetailsProps> = ({ property, onBa
     // WhatsApp Message Logic
     const openWhatsApp = () => {
         let message = `Olá! Gostaria de reservar o imóvel *${property.title}*.`;
-        message += `\n\n📅 *Datas:* ${formatDate(checkIn)} a ${formatDate(checkOut)} (${nightsCount} noites)`;
-        message += `\n💰 *Valor Estimado:* ${formatCurrency(totalPrice)}`;
-
         const encoded = encodeURIComponent(message);
 
         // Redirects to the specific property owner's phone number
@@ -145,19 +77,11 @@ export const PropertyDetails: React.FC<PropertyDetailsProps> = ({ property, onBa
     };
 
     const handleReserveClick = () => {
-        if (!checkIn || !checkOut) {
-            setIsWidgetCalendarOpen(true);
-            return;
-        }
         openWhatsApp();
     };
 
     const handleMobileReserve = () => {
-        if (!checkIn || !checkOut) {
-            document.getElementById('availability-section')?.scrollIntoView({ behavior: 'smooth' });
-        } else {
-            openWhatsApp();
-        }
+        openWhatsApp();
     };
 
     // Share Functionality
@@ -186,15 +110,32 @@ export const PropertyDetails: React.FC<PropertyDetailsProps> = ({ property, onBa
         setIsSaved(!isSaved);
     };
 
-    // SEO: Dynamic Title
+    // SEO and Scroll Management
     useEffect(() => {
-        if (property.title) {
-            document.title = `${property.title} | Concierge Moeda`;
+        window.scrollTo(0, 0);
+
+        if (property) {
+            const seoTitle = `${property.title} | Aluguel em Moeda, MG`;
+            const seoDesc = `Reserve o ${property.title} em Moeda. ${property.description.substring(0, 150)}...`;
+
+            document.title = seoTitle;
+
+            // Update meta description
+            const metaDesc = document.querySelector('meta[name="description"]');
+            if (metaDesc) {
+                metaDesc.setAttribute('content', seoDesc);
+            }
+
+            // Update Open Graph tags
+            const ogTitle = document.querySelector('meta[property="og:title"]');
+            const ogImage = document.querySelector('meta[property="og:image"]');
+            if (ogTitle) ogTitle.setAttribute('content', seoTitle);
+            if (ogImage) ogImage.setAttribute('content', property.imageUrl);
         }
         return () => {
             document.title = "Concierge Moeda"; // Reset on unmount
         };
-    }, [property.title]);
+    }, [property]);
 
     return (
         <div className="bg-white min-h-screen pb-32 lg:pb-20 relative">
@@ -335,8 +276,6 @@ export const PropertyDetails: React.FC<PropertyDetailsProps> = ({ property, onBa
                             <p className="text-gray-600 leading-relaxed whitespace-pre-line">
                                 {property.description}
 
-                                <br /><br />
-                                Um refúgio perfeito para quem busca conexão com a natureza, silêncio e ar puro. A casa dispõe de internet de alta velocidade, perfeita para home office com vista para as montanhas.
                             </p>
                         </div>
 
@@ -402,23 +341,15 @@ export const PropertyDetails: React.FC<PropertyDetailsProps> = ({ property, onBa
 
                                     <div className="border-t border-gray-200 pt-6">
                                         {property.owner.bio && (
-                                            <p className="text-gray-600 text-sm leading-relaxed mb-6 italic">
+                                            <p className="text-gray-600 text-sm leading-relaxed mb-2 italic">
                                                 "{property.owner.bio}"
                                             </p>
                                         )}
-
-                                        <button
-                                            onClick={openWhatsApp}
-                                            className="bg-gray-900 hover:bg-black text-white px-6 py-3 rounded-xl font-bold text-sm transition-colors shadow-lg flex items-center gap-2 w-fit active:scale-95"
-                                        >
-                                            <span className="material-symbols-outlined text-lg">chat</span>
-                                            Falar com o Anfitrião
-                                        </button>
                                     </div>
 
                                     <div className="flex items-center gap-2 text-xs text-gray-400 mt-2">
-                                        <span className="material-symbols-outlined text-sm">shield</span>
-                                        Para sua segurança, pague sempre através do Concierge Moeda.
+                                        <span className="material-symbols-outlined text-sm">info</span>
+                                        O Concierge Moeda é uma vitrine curada. A negociação e o pagamento são feitos diretamente com o proprietário.
                                     </div>
                                 </div>
                             </div>
@@ -447,58 +378,6 @@ export const PropertyDetails: React.FC<PropertyDetailsProps> = ({ property, onBa
                             )}
                         </div>
 
-                        {/* Availability Section */}
-                        <div id="availability-section" className="py-8">
-                            <div className="flex justify-between items-baseline mb-2">
-                                <h2 className="text-2xl font-bold text-gray-900">Disponibilidade</h2>
-                                {(checkIn || checkOut) && (
-                                    <button onClick={clearDates} className="text-sm font-bold text-gray-500 underline hover:text-gray-900">
-                                        Limpar datas
-                                    </button>
-                                )}
-                            </div>
-                            <p className="text-gray-500 mb-6">Selecione as datas de check-in e check-out</p>
-
-                            <div className="flex flex-col md:flex-row gap-8 items-start">
-                                {/* Larger Static Calendar */}
-                                <Calendar
-                                    checkIn={checkIn}
-                                    checkOut={checkOut}
-                                    onDateSelect={handleDateSelect}
-                                    className="w-full max-w-md border border-gray-200 rounded-2xl p-6 shadow-sm"
-                                />
-
-                                {/* Visual Trip Summary Card */}
-                                <div className="flex-1 w-full bg-gray-50 rounded-2xl p-6 border border-gray-100">
-                                    <h4 className="font-bold text-gray-900 mb-4 flex items-center gap-2">
-                                        <span className="material-symbols-outlined text-primary">event_available</span>
-                                        Resumo da Viagem
-                                    </h4>
-
-                                    <div className="space-y-4">
-                                        <div className="flex justify-between items-center bg-white p-3 rounded-xl border border-gray-100 shadow-sm">
-                                            <div className="text-xs text-gray-500 uppercase font-bold">Check-in</div>
-                                            <div className="font-medium text-gray-900">{checkIn ? checkIn.toLocaleDateString('pt-BR') : '-'}</div>
-                                        </div>
-
-                                        <div className="flex justify-between items-center bg-white p-3 rounded-xl border border-gray-100 shadow-sm">
-                                            <div className="text-xs text-gray-500 uppercase font-bold">Check-out</div>
-                                            <div className="font-medium text-gray-900">{checkOut ? checkOut.toLocaleDateString('pt-BR') : '-'}</div>
-                                        </div>
-
-                                        {nightsCount > 0 && (
-                                            <div className="mt-4 pt-4 border-t border-gray-200">
-                                                <div className="flex justify-between items-center">
-                                                    <span className="text-gray-600">Total de noites</span>
-                                                    <span className="text-2xl font-bold text-primary">{nightsCount}</span>
-                                                </div>
-                                                <p className="text-xs text-gray-400 mt-1 text-right">Aproveite seus dias em Moeda!</p>
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
 
                     </div>
 
@@ -508,7 +387,7 @@ export const PropertyDetails: React.FC<PropertyDetailsProps> = ({ property, onBa
                             <div className="flex justify-between items-end mb-6">
                                 <div>
                                     <span className="text-2xl font-bold text-gray-900">R$ {property.price}</span>
-                                    <span className="text-gray-500"> / noite</span>
+                                    <span className="text-gray-500"> / diária</span>
                                 </div>
                                 <div className="flex items-center gap-1 text-sm text-gray-600">
                                     <span className="material-symbols-outlined text-secondary text-sm icon-filled">star</span>
@@ -516,125 +395,92 @@ export const PropertyDetails: React.FC<PropertyDetailsProps> = ({ property, onBa
                                 </div>
                             </div>
 
-                            {/* Integrated Date Picker / Inputs */}
-                            <div className="relative border border-gray-300 rounded-xl mb-4">
-                                <div
-                                    className="grid grid-cols-2"
-                                    onClick={() => setIsWidgetCalendarOpen(true)}
-                                >
-                                    <div className="p-3 border-r border-gray-300 cursor-pointer hover:bg-gray-50 rounded-tl-xl rounded-bl-xl">
-                                        <label className="block text-[10px] font-bold uppercase text-gray-800">Check-in</label>
-                                        <span className={`text-sm ${checkIn ? 'text-gray-900 font-medium' : 'text-gray-400'}`}>
-                                            {formatDate(checkIn)}
-                                        </span>
-                                    </div>
-                                    <div className="p-3 cursor-pointer hover:bg-gray-50 rounded-tr-xl rounded-br-xl">
-                                        <label className="block text-[10px] font-bold uppercase text-gray-800">Check-out</label>
-                                        <span className={`text-sm ${checkOut ? 'text-gray-900 font-medium' : 'text-gray-400'}`}>
-                                            {formatDate(checkOut)}
-                                        </span>
-                                    </div>
+                            <div className="space-y-3 mb-6 bg-gray-50 p-4 rounded-xl border border-gray-100">
+                                <div className="flex justify-between text-sm">
+                                    <span className="text-gray-500">Diária (Seg a Qui)</span>
+                                    <span className="font-bold text-gray-900">R$ {property.price}</span>
                                 </div>
-
-                                {/* Calendar Popover */}
-                                {isWidgetCalendarOpen && (
-                                    <div className="absolute top-[calc(100%+12px)] right-0 left-[-16px] w-[calc(100%+32px)] md:left-0 md:w-full bg-white z-50 p-4 shadow-2xl border border-gray-100 rounded-2xl animate-fade-in-up">
-                                        <Calendar
-                                            checkIn={checkIn}
-                                            checkOut={checkOut}
-                                            onDateSelect={handleDateSelect}
-                                            mini={true} // Slightly smaller cells for widget
-                                            className="w-full"
-                                        />
-                                        <div className="flex justify-between items-center mt-4 border-t border-gray-100 pt-3">
-                                            <button
-                                                onClick={clearDates}
-                                                className="text-xs font-bold text-gray-500 underline hover:text-gray-900"
-                                            >
-                                                Limpar datas
-                                            </button>
-                                            <button
-                                                onClick={(e) => { e.stopPropagation(); setIsWidgetCalendarOpen(false); }}
-                                                className="text-xs bg-gray-900 text-white px-3 py-1.5 rounded-lg font-bold hover:bg-black"
-                                            >
-                                                Fechar
-                                            </button>
-                                        </div>
+                                {property.weekend_price && property.weekend_price > 0 && (
+                                    <div className="flex justify-between text-sm">
+                                        <span className="text-gray-500">Final de Semana</span>
+                                        <span className="font-bold text-gray-900">R$ {property.weekend_price}</span>
                                     </div>
                                 )}
-                            </div>
-
-                            <div className="border border-gray-300 rounded-xl overflow-hidden mb-4 p-3 hover:bg-gray-50 cursor-pointer flex justify-between items-center">
-                                <div>
-                                    <label className="block text-[10px] font-bold uppercase text-gray-800">Hóspedes</label>
-                                    <span className="text-sm text-gray-600">{property.guests} máx</span>
-                                </div>
-                                <span className="material-symbols-outlined text-gray-400">expand_more</span>
+                                {property.cleaning_fee && property.cleaning_fee > 0 && (
+                                    <div className="flex justify-between text-sm border-t border-gray-100 pt-2">
+                                        <span className="text-gray-500 font-medium">Taxa de Limpeza</span>
+                                        <span className="font-bold text-gray-900 text-xs">R$ {property.cleaning_fee} (única)</span>
+                                    </div>
+                                )}
+                                {property.min_stay && property.min_stay > 1 && (
+                                    <div className="flex justify-between text-sm border-t border-gray-100 pt-2">
+                                        <span className="text-gray-500 font-medium">Estadia Mínima</span>
+                                        <span className="font-bold text-gray-900 text-xs">{property.min_stay} diárias</span>
+                                    </div>
+                                )}
                             </div>
 
                             <button
                                 onClick={handleReserveClick}
                                 className="w-full bg-[#25D366] hover:bg-[#128C7E] text-white py-3.5 px-6 rounded-xl font-bold text-lg shadow-md transition-all duration-200 flex items-center justify-center gap-2 mb-4"
                             >
-                                {checkIn && checkOut ? 'Reservar' : 'Verificar Disponibilidade'}
+                                Reservar via WhatsApp
                             </button>
 
                             <p className="text-center text-xs text-gray-500 mb-6">
-                                Você não será cobrado agora. Fale diretamente com o proprietário.
+                                Você falará diretamente com o proprietário para acertar as datas e pagamento.
                             </p>
-
-                            {/* Dynamic Pricing */}
-                            {checkIn && checkOut && nightsCount > 0 ? (
-                                <div className="space-y-3 text-gray-600 text-sm animate-fade-in">
-                                    <div className="flex justify-between">
-                                        <span className="underline">R$ {property.price} x {nightsCount} noites</span>
-                                        <span>{formatCurrency(property.price * nightsCount)}</span>
-                                    </div>
-                                    <div className="flex justify-between">
-                                        <span className="underline">Taxa de limpeza</span>
-                                        <span>{formatCurrency(CLEANING_FEE)}</span>
-                                    </div>
-                                    <div className="flex justify-between font-bold text-lg text-gray-900 pt-4 border-t border-gray-100 mt-4">
-                                        <span>Total Estimado</span>
-                                        <span>{formatCurrency(totalPrice)}</span>
-                                    </div>
-                                </div>
-                            ) : (
-                                <div className="text-center text-sm text-gray-400 py-4 border-t border-gray-100 mt-4">
-                                    Selecione datas para ver o orçamento
-                                </div>
-                            )}
                         </div>
                     </div>
                 </div>
 
-                {/* Mobile Fixed Bottom Bar */}
-                <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 px-6 z-50 lg:hidden flex justify-between items-center pb-8 shadow-[0_-4px_10px_rgba(0,0,0,0.05)]">
-                    <div className="flex flex-col">
-                        <div className="flex items-baseline gap-1">
-                            <span className="text-lg font-bold text-gray-900">
-                                {checkIn && checkOut ? formatCurrency(totalPrice) : `R$ ${property.price}`}
-                            </span>
-                            {!checkIn && !checkOut && <span className="text-xs text-gray-500">/ noite</span>}
-                        </div>
-                        {checkIn && checkOut ? (
-                            <span className="text-xs text-gray-600 font-medium underline decoration-gray-300">
-                                {nightsCount} noites · Taxas inclusas
-                            </span>
-                        ) : (
-                            <div className="flex items-center gap-1 text-xs text-gray-900 font-bold">
-                                <span className="material-symbols-outlined text-[14px]">calendar_month</span>
-                                <span>Selecione as datas</span>
+                {/* Mobile Floating Booking Bar */}
+                <div className="fixed bottom-6 left-4 right-4 bg-white rounded-3xl shadow-2xl border border-gray-100 p-4 z-50 lg:hidden animate-fade-in-up">
+                    <div className="flex flex-col gap-3">
+                        <div className="flex justify-between items-center px-1">
+                            <div className="flex items-baseline gap-1">
+                                <span className="text-xl font-bold text-gray-900">
+                                    R$ {property.price}
+                                </span>
+                                <span className="text-xs text-gray-500">/ diária</span>
                             </div>
-                        )}
-                    </div>
+                            <div className="flex items-center gap-1 text-sm text-gray-600 font-bold">
+                                <span className="material-symbols-outlined text-secondary text-base icon-filled">star</span>
+                                <span>{property.rating}</span>
+                            </div>
+                        </div>
 
-                    <button
-                        onClick={handleMobileReserve}
-                        className="bg-primary hover:bg-primary-dark text-white px-8 py-3 rounded-xl font-bold text-base shadow-lg active:scale-95 transition-all"
-                    >
-                        {checkIn && checkOut ? 'Reservar' : 'Verificar'}
-                    </button>
+                        {/* Mobile: Simple Pricing Badges */}
+                        <div className="flex flex-wrap gap-2 px-1">
+                            {property.weekend_price && property.weekend_price > 0 && (
+                                <span className="text-[10px] bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full font-bold">
+                                    FDS: R$ {property.weekend_price}
+                                </span>
+                            )}
+                            {property.cleaning_fee && property.cleaning_fee > 0 && (
+                                <span className="text-[10px] bg-blue-50 text-blue-600 px-2 py-0.5 rounded-full font-bold">
+                                    Limpeza: R$ {property.cleaning_fee}
+                                </span>
+                            )}
+                            {property.min_stay && property.min_stay > 1 && (
+                                <span className="text-[10px] bg-orange-50 text-orange-600 px-2 py-0.5 rounded-full font-bold">
+                                    Mín {property.min_stay} diárias
+                                </span>
+                            )}
+                        </div>
+
+                        <button
+                            onClick={handleMobileReserve}
+                            className="bg-[#25D366] hover:bg-[#128C7E] text-white w-full py-3.5 rounded-2xl font-bold text-base shadow-lg active:scale-95 transition-all flex items-center justify-center gap-2"
+                        >
+                            <span className="material-symbols-outlined text-lg">chat</span>
+                            Reservar via WhatsApp
+                        </button>
+
+                        <p className="text-[10px] text-gray-500 text-center leading-tight">
+                            Você falará diretamente com o proprietário para acertar as datas e pagamento.
+                        </p>
+                    </div>
                 </div>
 
                 {/* Lightbox Gallery Modal */}

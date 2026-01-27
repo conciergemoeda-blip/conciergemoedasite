@@ -5,6 +5,9 @@ export interface Property {
   description: string;
   location: string;
   price: number;
+  weekend_price?: number; // Price for Friday/Saturday nights
+  cleaning_fee?: number;  // One-time cleaning fee
+  min_stay?: number;      // Minimum number of nights
   rating: number;
   reviews: number;
   guests: number;

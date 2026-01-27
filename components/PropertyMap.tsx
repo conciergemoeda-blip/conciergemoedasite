@@ -1,4 +1,19 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect } from 'react';
+import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
+
+// Fix for default Leaflet icon issue in Webpack/Vite
+import markerIcon2x from 'leaflet/dist/images/marker-icon-2x.png';
+import markerIcon from 'leaflet/dist/images/marker-icon.png';
+import markerShadow from 'leaflet/dist/images/marker-shadow.png';
+
+delete (L.Icon.Default.prototype as any)._getIconUrl;
+L.Icon.Default.mergeOptions({
+    iconRetinaUrl: markerIcon2x,
+    iconUrl: markerIcon,
+    shadowUrl: markerShadow,
+});
 
 interface PropertyMapProps {
     lat: number;
@@ -6,70 +21,88 @@ interface PropertyMapProps {
     title: string;
 }
 
-export const PropertyMap: React.FC<PropertyMapProps> = ({ lat, lng, title }) => {
-    const mapRef = useRef<HTMLDivElement>(null);
-    const mapInstance = useRef<any>(null);
-
+// Component to handle map centering when coordinates change
+const ChangeView: React.FC<{ center: [number, number] }> = ({ center }) => {
+    const map = useMap();
     useEffect(() => {
-        if (!mapRef.current) return;
+        map.setView(center);
+    }, [center, map]);
+    return null;
+};
 
-        // Ensure Leaflet is available globally from script tag
-        const L = (window as any).L;
-        if (!L) return;
+export const PropertyMap: React.FC<PropertyMapProps> = ({ lat, lng, title }) => {
+    const position: [number, number] = [lat, lng];
+    const [mapType, setMapType] = React.useState<'STREET' | 'SATELLITE'>('STREET');
 
-        // Initialize map only once
-        if (mapInstance.current) {
-            mapInstance.current.setView([lat, lng], 14);
-            return;
-        }
-
-        // Create Map
-        const map = L.map(mapRef.current, {
-            center: [lat, lng],
-            zoom: 14,
-            scrollWheelZoom: false, // Disable scroll zoom for better UX
-            zoomControl: true,
-            dragging: !L.Browser.mobile, // Disable dragging on mobile initially to allow page scroll
-        });
-
-        // Add OpenStreetMap Tile Layer
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-        }).addTo(map);
-
-        // Custom Icon using Material Symbols
-        const customIcon = L.divIcon({
-            className: 'custom-div-icon',
-            html: `
-                <div class="relative flex items-center justify-center w-12 h-12 -translate-x-1/2 -translate-y-full">
-                    <div class="w-12 h-12 bg-primary rounded-full flex items-center justify-center shadow-lg map-marker-pulse text-white z-10">
-                        <span class="material-symbols-outlined text-2xl">location_on</span>
-                    </div>
-                    <div class="absolute -bottom-1 left-1/2 -translate-x-1/2 w-4 h-4 bg-primary rotate-45 z-0"></div>
-                </div>
-            `,
-            iconSize: [48, 48],
-            iconAnchor: [24, 48],
-        });
-
-        // Add Marker
-        const marker = L.marker([lat, lng], { icon: customIcon }).addTo(map);
-        marker.bindPopup(`<b>${title}</b>`).openPopup();
-
-        mapInstance.current = map;
-
-        // Cleanup
-        return () => {
-            if (mapInstance.current) {
-                mapInstance.current.remove();
-                mapInstance.current = null;
-            }
-        };
-    }, [lat, lng, title]);
+    // Custom Icon for Concierge Moeda
+    const customIcon = new L.Icon({
+        iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png',
+        shadowUrl: markerShadow,
+        iconSize: [25, 41],
+        iconAnchor: [12, 41],
+        popupAnchor: [1, -34],
+        shadowSize: [41, 41]
+    });
 
     return (
-        <div className="relative w-full h-[400px] rounded-2xl overflow-hidden shadow-sm border border-gray-100 z-0">
-            <div ref={mapRef} className="w-full h-full z-0"></div>
+        <div className="w-full h-[300px] md:h-[450px] rounded-3xl overflow-hidden border border-gray-100 shadow-inner group relative">
+            <MapContainer
+                center={position}
+                zoom={15}
+                scrollWheelZoom={false}
+                style={{ height: '100%', width: '100%', zIndex: 10 }}
+            >
+                {mapType === 'STREET' ? (
+                    <TileLayer
+                        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                    />
+                ) : (
+                    <TileLayer
+                        attribution='Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
+                        url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
+                    />
+                )}
+                <Marker position={position} icon={customIcon}>
+                    <Popup className="custom-popup">
+                        <div className="font-bold text-gray-900">{title}</div>
+                        <div className="text-xs text-gray-500 mt-1">Localização aproximada</div>
+                    </Popup>
+                </Marker>
+                <ChangeView center={position} />
+            </MapContainer>
+
+            {/* Map Type Toggle */}
+            <div className="absolute top-4 right-4 z-[20] flex bg-white/90 backdrop-blur-md p-1 rounded-xl shadow-lg border border-gray-100">
+                <button
+                    type="button"
+                    onClick={() => setMapType('STREET')}
+                    className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${mapType === 'STREET' ? 'bg-primary text-white shadow-sm' : 'text-gray-500 hover:text-gray-900'}`}
+                >
+                    Mapa
+                </button>
+                <button
+                    type="button"
+                    onClick={() => setMapType('SATELLITE')}
+                    className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${mapType === 'SATELLITE' ? 'bg-primary text-white shadow-sm' : 'text-gray-500 hover:text-gray-900'}`}
+                >
+                    Satélite
+                </button>
+            </div>
+
+
+            {/* Google Maps Overlay Button */}
+            <div className="absolute bottom-4 right-4 z-[20] transition-transform group-hover:scale-105">
+                <a
+                    href={`https://www.google.com/maps/search/?api=1&query=${lat},${lng}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="bg-white/90 backdrop-blur-md px-4 py-2 rounded-xl shadow-lg border border-gray-100 flex items-center gap-2 text-xs font-bold text-gray-800 hover:bg-white transition-all"
+                >
+                    <span className="material-symbols-outlined text-sm text-primary">map</span>
+                    Abrir no Google Maps
+                </a>
+            </div>
         </div>
     );
 };
