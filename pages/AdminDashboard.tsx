@@ -622,7 +622,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) =>
                                                     {prop.location}
                                                 </p>
                                                 <div className="flex items-center gap-2 mt-2">
-                                                    <div className="font-bold text-sm text-primary">{formatCurrency(prop.price)}</div>
+                                                    <div className="font-bold text-sm text-primary">{formatCurrency(prop.price || prop.seasonal_price || prop.weekend_price || 0)}</div>
                                                     <div className="text-[10px] text-gray-400">/ diária</div>
                                                 </div>
                                             </div>
@@ -638,7 +638,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) =>
                                             </div>
                                             <div>
                                                 <div className="text-[10px] text-gray-400 uppercase font-bold">Comissão (20%)</div>
-                                                <div className="text-sm font-bold text-gray-900 mt-1">{formatCurrency(prop.price * 0.20)}</div>
+                                                <div className="text-sm font-bold text-gray-900 mt-1">{formatCurrency((prop.price || prop.seasonal_price || prop.weekend_price || 0) * 0.20)}</div>
                                             </div>
                                         </div>
 
