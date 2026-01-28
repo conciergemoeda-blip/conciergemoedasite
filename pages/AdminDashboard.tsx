@@ -391,6 +391,77 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) =>
                                         </button>
                                     </div>
 
+
+                                    {/* Banner Section */}
+                                    <div className="border-t border-gray-100 pt-8 mt-8">
+                                        <h2 className="text-xl font-bold text-gray-900 font-serif mb-6 flex items-center gap-2">
+                                            <span className="material-symbols-outlined text-primary">image</span>
+                                            Banner do Site
+                                        </h2>
+
+                                        <div className="bg-gray-50 rounded-2xl p-6 border border-gray-200">
+                                            <label className="block text-sm font-bold text-gray-700 mb-4">Imagem de Capa (Homepage)</label>
+
+                                            <div className="relative group rounded-xl overflow-hidden aspect-[21/9] bg-gray-200 shadow-sm">
+                                                <img
+                                                    src={settings.bannerUrl || "https://images.unsplash.com/photo-1470770841072-f978cf4d019e?q=70&w=1400&auto=format&fit=crop"}
+                                                    alt="Banner Atual"
+                                                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                                                />
+                                                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                                    <button
+                                                        onClick={() => document.getElementById('banner-upload')?.click()}
+                                                        className="bg-white text-gray-900 px-6 py-3 rounded-xl font-bold flex items-center gap-2 hover:bg-gray-100 transition-colors shadow-lg"
+                                                    >
+                                                        <span className="material-symbols-outlined">upload</span>
+                                                        Trocar Imagem
+                                                    </button>
+                                                </div>
+                                            </div>
+
+                                            <input
+                                                id="banner-upload"
+                                                type="file"
+                                                accept="image/*"
+                                                className="hidden"
+                                                onChange={async (e) => {
+                                                    const file = e.target.files?.[0];
+                                                    if (!file) return;
+
+                                                    try {
+                                                        setIsSavingSettings(true);
+                                                        const fileExt = file.name.split('.').pop();
+                                                        const fileName = `banner_${Date.now()}.${fileExt}`;
+                                                        const filePath = `property-images/${fileName}`; // Reusing bucket
+
+                                                        const { error: uploadError } = await supabase.storage
+                                                            .from('property-images')
+                                                            .upload(filePath, file);
+
+                                                        if (uploadError) throw uploadError;
+
+                                                        const { data } = supabase.storage
+                                                            .from('property-images')
+                                                            .getPublicUrl(filePath);
+
+                                                        await updateSettings({ bannerUrl: data.publicUrl });
+                                                        triggerGlobalToast('Banner atualizado com sucesso!');
+                                                    } catch (error: any) {
+                                                        console.error('Error uploading banner:', error);
+                                                        triggerGlobalToast('Erro ao atualizar banner.');
+                                                    } finally {
+                                                        setIsSavingSettings(false);
+                                                    }
+                                                }}
+                                            />
+
+                                            <p className="text-xs text-gray-500 mt-3 flex items-center gap-1">
+                                                <span className="material-symbols-outlined text-sm">info</span>
+                                                Tamanho recomendado: 1920x600px. Formatos: JPG, PNG.
+                                            </p>
+                                        </div>
+                                    </div>
+
                                 </div>
                             </div>
 
@@ -687,8 +758,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) =>
                                                         </div>
                                                     </td>
                                                     <td className="px-6 py-4 whitespace-nowrap text-sm">
-                                                        <div className="font-bold text-gray-900">{formatCurrency(prop.price)}</div>
-                                                        <div className="text-xs text-gray-400">Comissão: {formatCurrency(prop.price * 0.20)} (20%)</div>
+                                                        <div className="font-bold text-gray-900">{formatCurrency(prop.price || prop.seasonal_price || prop.weekend_price || 0)}</div>
+                                                        <div className="text-xs text-gray-400">Comissão (20%): {formatCurrency((prop.price || prop.seasonal_price || prop.weekend_price || 0) * 0.20)}</div>
                                                     </td>
                                                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                                         <div className="flex justify-end gap-2">

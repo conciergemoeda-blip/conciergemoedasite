@@ -386,8 +386,12 @@ export const PropertyDetails: React.FC<PropertyDetailsProps> = ({ property, onBa
                         <div ref={widgetRef} className="sticky top-28 bg-white rounded-2xl shadow-xl border border-gray-200 p-6 z-20">
                             <div className="flex justify-between items-end mb-6">
                                 <div>
-                                    <span className="text-2xl font-bold text-gray-900">R$ {property.price}</span>
-                                    <span className="text-gray-500"> / diária</span>
+                                    <span className="text-2xl font-bold text-gray-900">
+                                        R$ {property.price || property.seasonal_price || property.weekend_price || 0}
+                                    </span>
+                                    <span className="text-gray-500">
+                                        {property.price ? ' / diária' : (property.seasonal_price ? ' / temporada' : (property.weekend_price ? ' / fim de semana' : ' / diária'))}
+                                    </span>
                                 </div>
                                 <div className="flex items-center gap-1 text-sm text-gray-600">
                                     <span className="material-symbols-outlined text-secondary text-sm icon-filled">star</span>
@@ -396,14 +400,22 @@ export const PropertyDetails: React.FC<PropertyDetailsProps> = ({ property, onBa
                             </div>
 
                             <div className="space-y-3 mb-6 bg-gray-50 p-4 rounded-xl border border-gray-100">
-                                <div className="flex justify-between text-sm">
-                                    <span className="text-gray-500">Diária (Seg a Qui)</span>
-                                    <span className="font-bold text-gray-900">R$ {property.price}</span>
-                                </div>
-                                {property.weekend_price && property.weekend_price > 0 && (
+                                {Boolean(property.price && property.price > 0) && (
                                     <div className="flex justify-between text-sm">
-                                        <span className="text-gray-500">Final de Semana</span>
+                                        <span className="text-gray-500">Diária (Seg a Qui)</span>
+                                        <span className="font-bold text-gray-900">R$ {property.price}</span>
+                                    </div>
+                                )}
+                                {Boolean(property.weekend_price && property.weekend_price > 0) && (
+                                    <div className="flex justify-between text-sm">
+                                        <span className="text-gray-500">Fim de Semana / Feriados</span>
                                         <span className="font-bold text-gray-900">R$ {property.weekend_price}</span>
+                                    </div>
+                                )}
+                                {Boolean(property.seasonal_price && property.seasonal_price > 0) && (
+                                    <div className="flex justify-between text-sm">
+                                        <span className="text-gray-500 font-medium">Alta Temporada</span>
+                                        <span className="font-bold text-primary">R$ {property.seasonal_price}</span>
                                     </div>
                                 )}
                                 {property.cleaning_fee && property.cleaning_fee > 0 && (
@@ -440,9 +452,11 @@ export const PropertyDetails: React.FC<PropertyDetailsProps> = ({ property, onBa
                         <div className="flex justify-between items-center px-1">
                             <div className="flex items-baseline gap-1">
                                 <span className="text-xl font-bold text-gray-900">
-                                    R$ {property.price}
+                                    R$ {property.price || property.seasonal_price || property.weekend_price || 0}
                                 </span>
-                                <span className="text-xs text-gray-500">/ diária</span>
+                                <span className="text-xs text-gray-500">
+                                    {property.price ? '/ diária' : (property.seasonal_price ? '/ temporada' : (property.weekend_price ? '/ fim de semana' : '/ diária'))}
+                                </span>
                             </div>
                             <div className="flex items-center gap-1 text-sm text-gray-600 font-bold">
                                 <span className="material-symbols-outlined text-secondary text-base icon-filled">star</span>

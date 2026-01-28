@@ -5,6 +5,7 @@ import { SITE_CONFIG as DEFAULT_CONFIG } from '../constants';
 interface SiteSettings {
     whatsapp: string;
     email: string;
+    bannerUrl?: string;
     formattedWhatsapp?: string;
 }
 
@@ -21,6 +22,7 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     const [settings, setSettings] = useState<SiteSettings>({
         whatsapp: DEFAULT_CONFIG.whatsapp,
         email: DEFAULT_CONFIG.email,
+        bannerUrl: '',
         formattedWhatsapp: DEFAULT_CONFIG.formattedWhatsapp
     });
     const [loading, setLoading] = useState(true);
@@ -55,6 +57,7 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
                 setSettings({
                     whatsapp: data.whatsapp,
                     email: data.email,
+                    bannerUrl: data.banner_url || '',
                     formattedWhatsapp: formatWhatsapp(data.whatsapp)
                 });
             }
@@ -71,7 +74,9 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
                 .from('site_settings')
                 .upsert({
                     id: 'main',
-                    ...newSettings,
+                    whatsapp: newSettings.whatsapp,
+                    email: newSettings.email,
+                    banner_url: newSettings.bannerUrl,
                     updated_at: new Date().toISOString()
                 });
 

@@ -29,6 +29,7 @@ export const AddPropertyForm: React.FC<AddPropertyFormProps> = ({ onSave, onCanc
         location: '',
         price: 0,
         weekend_price: 0,
+        seasonal_price: 0,
         cleaning_fee: 0,
         min_stay: 1,
         rating: 5.0,
@@ -70,6 +71,8 @@ export const AddPropertyForm: React.FC<AddPropertyFormProps> = ({ onSave, onCanc
             }
         };
     });
+
+    const [isSearchingLocation, setIsSearchingLocation] = useState(false);
 
     const [activeStep, setActiveStep] = useState(1);
     const [inputType, setInputType] = useState<'UPLOAD' | 'URL'>('UPLOAD');
@@ -132,6 +135,44 @@ export const AddPropertyForm: React.FC<AddPropertyFormProps> = ({ onSave, onCanc
                 [field]: parseFloat(value) || 0
             }
         }));
+    };
+
+    const handleSearchLocation = async () => {
+        if (!formData.location) {
+            showToast("Digite uma localização para buscar.", "info");
+            return;
+        }
+
+        setIsSearchingLocation(true);
+        try {
+            // Append Moeda, MG to improve results if not present
+            let query = formData.location;
+            if (!query.toLowerCase().includes('moeda')) {
+                query += ', Moeda, MG';
+            }
+
+            const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=1`);
+            const data = await response.json();
+
+            if (data && data.length > 0) {
+                const { lat, lon } = data[0];
+                setFormData(prev => ({
+                    ...prev,
+                    coordinates: {
+                        lat: parseFloat(lat),
+                        lng: parseFloat(lon)
+                    }
+                }));
+                showToast("Localização encontrada no mapa!", "success");
+            } else {
+                showToast("Localização não encontrada. Tente ser mais específico.", "warning");
+            }
+        } catch (error) {
+            console.error("Geocoding error:", error);
+            showToast("Erro ao buscar localização. Tente ajustar manualmente.", "error");
+        } finally {
+            setIsSearchingLocation(false);
+        }
     };
 
     const handleUseCurrentLocation = () => {
@@ -394,8 +435,8 @@ export const AddPropertyForm: React.FC<AddPropertyFormProps> = ({ onSave, onCanc
             return;
         }
 
-        if (!formData.title || !formData.price || !formData.imageUrl || !formData.ownerPhone || !formData.owner?.name) {
-            showToast("Preencha todos os campos obrigatórios.", "warning");
+        if (!formData.title || !(formData.price || formData.seasonal_price) || !formData.imageUrl || !formData.ownerPhone || !formData.owner?.name) {
+            showToast("Preencha todos os campos obrigatórios (incluindo pelo menos um preço).", "warning");
             return;
         }
         onSave(formData as Property);
@@ -478,7 +519,7 @@ export const AddPropertyForm: React.FC<AddPropertyFormProps> = ({ onSave, onCanc
                                 <div>
                                     <label className="block text-sm font-bold text-gray-700 mb-2 flex items-center gap-2">
                                         <span className="material-symbols-outlined text-gray-400">event_available</span>
-                                        Preço Final de Semana
+                                        Fim de Semana / Feriados
                                     </label>
                                     <div className="relative">
                                         <span className="absolute left-4 top-3.5 text-gray-500 font-bold">R$</span>
@@ -487,6 +528,22 @@ export const AddPropertyForm: React.FC<AddPropertyFormProps> = ({ onSave, onCanc
                                             type="number"
                                             value={formData.weekend_price || ''}
                                             onChange={(e) => setFormData(prev => ({ ...prev, weekend_price: Number(e.target.value) }))}
+                                            className="w-full bg-gray-50 border border-gray-200 rounded-xl pl-10 pr-4 py-3.5 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/10 transition-all font-bold text-gray-900"
+                                        />
+                                    </div>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-bold text-gray-700 mb-2 flex items-center gap-2">
+                                        <span className="material-symbols-outlined text-gray-400">wb_sunny</span>
+                                        Alta Temporada (Opcional)
+                                    </label>
+                                    <div className="relative">
+                                        <span className="absolute left-4 top-3.5 text-gray-500 font-bold">R$</span>
+                                        <input
+                                            name="seasonal_price"
+                                            type="number"
+                                            value={formData.seasonal_price || ''}
+                                            onChange={(e) => setFormData(prev => ({ ...prev, seasonal_price: Number(e.target.value) }))}
                                             className="w-full bg-gray-50 border border-gray-200 rounded-xl pl-10 pr-4 py-3.5 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/10 transition-all font-bold text-gray-900"
                                         />
                                     </div>
@@ -512,13 +569,28 @@ export const AddPropertyForm: React.FC<AddPropertyFormProps> = ({ onSave, onCanc
                                         <span className="material-symbols-outlined text-gray-400">location_on</span>
                                         Localização (Cidade/Bairro) *
                                     </label>
-                                    <input
-                                        name="location"
-                                        value={formData.location}
-                                        onChange={handleChange}
-                                        placeholder="Ex: Taquaraçu, Moeda"
-                                        className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3.5 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/10 transition-all"
-                                    />
+                                    <div className="flex gap-2">
+                                        <input
+                                            name="location"
+                                            value={formData.location}
+                                            onChange={handleChange}
+                                            placeholder="Ex: Taquaraçu, Moeda"
+                                            className="flex-1 bg-gray-50 border border-gray-200 rounded-xl px-4 py-3.5 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/10 transition-all"
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={handleSearchLocation}
+                                            disabled={isSearchingLocation}
+                                            className="bg-primary text-white p-3 rounded-xl hover:bg-primary-dark transition-all flex items-center justify-center min-w-[50px] disabled:opacity-50"
+                                            title="Buscar no Mapa"
+                                        >
+                                            {isSearchingLocation ? (
+                                                <div className="w-5 h-5 border-2 border-white/20 border-t-white rounded-full animate-spin"></div>
+                                            ) : (
+                                                <span className="material-symbols-outlined">search</span>
+                                            )}
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
 
@@ -705,14 +777,10 @@ export const AddPropertyForm: React.FC<AddPropertyFormProps> = ({ onSave, onCanc
                                                 <p className="text-base font-bold text-gray-700">Clique ou arraste a capa aqui</p>
                                                 <p className="text-sm text-gray-400 mt-2 mb-6">JPG, PNG ou WebP (Máx. 50MB)</p>
 
-                                                <div className="flex items-center gap-3 w-full max-w-sm">
-                                                    <button type="button" className="flex-1 bg-white border border-gray-200 text-gray-700 py-2.5 rounded-xl text-xs font-bold hover:bg-gray-50 flex items-center justify-center gap-2 shadow-sm transition-transform active:scale-95" onClick={(e) => { e.stopPropagation(); triggerFileUpload(); }}>
+                                                <div className="flex justify-center w-full max-w-xs">
+                                                    <button type="button" className="w-full bg-white border border-gray-200 text-gray-700 py-2.5 rounded-xl text-xs font-bold hover:bg-gray-50 flex items-center justify-center gap-2 shadow-sm transition-transform active:scale-95" onClick={(e) => { e.stopPropagation(); triggerFileUpload(); }}>
                                                         <span className="material-symbols-outlined text-sm">smartphone</span>
-                                                        Do Dispositivo
-                                                    </button>
-                                                    <button type="button" className="flex-1 bg-white border border-gray-200 text-gray-700 py-2.5 rounded-xl text-xs font-bold hover:bg-gray-50 flex items-center justify-center gap-2 shadow-sm transition-transform active:scale-95" onClick={(e) => { e.stopPropagation(); triggerFileUpload(); }}>
-                                                        <span className="material-symbols-outlined text-sm text-blue-600">add_to_drive</span>
-                                                        Google Drive
+                                                        Escolher do Dispositivo
                                                     </button>
                                                 </div>
                                             </div>
@@ -746,18 +814,10 @@ export const AddPropertyForm: React.FC<AddPropertyFormProps> = ({ onSave, onCanc
                                         <button
                                             type="button"
                                             onClick={triggerGalleryUpload}
-                                            className="text-xs font-bold text-primary border border-primary/20 bg-primary/5 px-3 py-1.5 rounded-lg hover:bg-primary/10 transition-colors flex items-center gap-1"
+                                            className="text-xs font-bold text-primary border border-primary/20 bg-primary/5 px-4 py-2 rounded-lg hover:bg-primary/10 transition-colors flex items-center gap-1"
                                         >
                                             <span className="material-symbols-outlined text-sm">add_photo_alternate</span>
-                                            Adicionar Fotos
-                                        </button>
-                                        <button
-                                            type="button"
-                                            onClick={triggerGalleryUpload}
-                                            className="text-xs font-bold text-gray-600 border border-gray-200 bg-white px-3 py-1.5 rounded-lg hover:bg-gray-50 transition-colors flex items-center gap-1"
-                                        >
-                                            <span className="material-symbols-outlined text-sm text-blue-600">add_to_drive</span>
-                                            Drive
+                                            Adicionar da Galeria
                                         </button>
                                     </div>
                                     <input
@@ -809,8 +869,6 @@ export const AddPropertyForm: React.FC<AddPropertyFormProps> = ({ onSave, onCanc
                                         <p className="text-xs text-gray-400 mt-1">Adicione fotos da sala, quartos, cozinha e áreas externas.</p>
                                         <div className="flex gap-2 mt-4">
                                             <span className="text-xs font-bold text-primary underline">Carregar do Dispositivo</span>
-                                            <span className="text-xs text-gray-300">|</span>
-                                            <span className="text-xs font-bold text-blue-600 underline">Importar do Drive</span>
                                         </div>
                                     </div>
                                 )}

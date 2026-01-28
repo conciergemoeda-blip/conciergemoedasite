@@ -111,7 +111,7 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({ property, onClick })
         {/* Extra Pricing Info Badge */}
         {(property.weekend_price || property.cleaning_fee) ? (
           <div className="mt-2 flex gap-2">
-            {property.weekend_price && property.weekend_price > 0 && (
+            {Boolean(property.weekend_price && property.weekend_price > 0) && (
               <span className="text-[9px] bg-primary/5 text-primary-dark px-2 py-0.5 rounded-md font-bold uppercase">FDS R$ {property.weekend_price}</span>
             )}
             {property.cleaning_fee && property.cleaning_fee > 0 && (
@@ -125,8 +125,12 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({ property, onClick })
           <div className="flex flex-col">
             <span className="text-[10px] text-gray-400 uppercase tracking-wide font-bold mb-0.5">A partir de</span>
             <div className="flex items-baseline gap-1">
-              <span className="font-bold text-2xl text-primary gradient-text-primary">R$ {property.price}</span>
-              <span className="text-[10px] text-gray-500 font-bold">/ diária</span>
+              <span className="font-bold text-2xl text-primary gradient-text-primary">
+                R$ {property.price || property.seasonal_price || property.weekend_price || 0}
+              </span>
+              <span className="text-[10px] text-gray-500 font-bold">
+                {property.price ? '/ diária' : (property.seasonal_price ? '/ temporada' : (property.weekend_price ? '/ fim de semana' : '/ diária'))}
+              </span>
             </div>
           </div>
           <button

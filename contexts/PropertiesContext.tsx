@@ -47,6 +47,7 @@ const dbToProperty = (dbData: any): Property => {
             beds: dbData.beds || 1,
             baths: dbData.baths || 1,
             weekend_price: Number(dbData.weekend_price) || 0,
+            seasonal_price: Number(dbData.seasonal_price) || 0,
             cleaning_fee: Number(dbData.cleaning_fee) || 0,
             min_stay: dbData.min_stay || 1,
             coordinates: {
@@ -106,6 +107,7 @@ const propertyToDb = async (p: Property) => {
         beds: p.beds,
         baths: p.baths,
         weekend_price: p.weekend_price || 0,
+        seasonal_price: p.seasonal_price || 0,
         cleaning_fee: p.cleaning_fee || 0,
         min_stay: p.min_stay || 1,
         lat: p.coordinates?.lat || 0,
@@ -134,7 +136,7 @@ export const PropertiesProvider: React.FC<{ children: React.ReactNode }> = ({ ch
 
             const { data, count, error } = await supabase
                 .from('properties')
-                .select('id, title, price, weekend_price, cleaning_fee, min_stay, location, image_url, gallery, amenities, owner_id, owner_phone, owner_name, owner_bio, owner_avatar_url, guests, bedrooms, beds, baths, lat, lng, rating, reviews_count, featured, active, created_at', { count: 'exact' })
+                .select('id, title, description, price, weekend_price, seasonal_price, cleaning_fee, min_stay, location, image_url, gallery, amenities, owner_id, owner_phone, owner_name, owner_bio, owner_avatar_url, guests, bedrooms, beds, baths, lat, lng, rating, reviews_count, featured, active, created_at', { count: 'exact' })
                 .order('created_at', { ascending: false })
                 .range(from, to);
 

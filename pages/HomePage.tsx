@@ -3,6 +3,7 @@ import { PropertyCard } from '../components/PropertyCard';
 import { PropertySkeleton } from '../components/PropertySkeleton';
 import { EmptyState } from '../components/EmptyState';
 import { useProperties } from '../hooks/useProperties';
+import { useSettings } from '../contexts/SettingsContext';
 import { Page, Property } from '../types';
 
 interface HomePageProps {
@@ -35,6 +36,7 @@ const MIN_PRICE_GAP = 100;
 export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onPropertySelect }) => {
     // Use Supabase Data
     const { properties, loading, error, hasMore, loadMore } = useProperties();
+    const { settings } = useSettings();
 
     // Basic Search States
     const [searchTerm, setSearchTerm] = useState(''); // Used for location generic search
@@ -201,7 +203,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onPropertySelect
                         <div
                             className="absolute inset-0 bg-cover bg-center bg-no-repeat transition-transform duration-1000"
                             style={{
-                                backgroundImage: 'url("https://images.unsplash.com/photo-1470770841072-f978cf4d019e?q=70&w=1400&auto=format&fit=crop")',
+                                backgroundImage: `url("${settings.bannerUrl || 'https://images.unsplash.com/photo-1470770841072-f978cf4d019e?q=70&w=1400&auto=format&fit=crop'}")`,
                                 transform: `translateY(${scrollY * 0.5}px)` // Parallax effect
                             }}
                         ></div>

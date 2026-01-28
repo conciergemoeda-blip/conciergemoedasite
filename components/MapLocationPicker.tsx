@@ -62,7 +62,13 @@ const LocationMarker: React.FC<{
 const ChangeView: React.FC<{ center: [number, number] }> = ({ center }) => {
     const map = useMap();
     useEffect(() => {
-        map.setView(center, map.getZoom());
+        // Fix for grey areas (forces map to recalculate its container size)
+        map.invalidateSize();
+        // Smooth transition to new coordinates
+        map.flyTo(center, map.getZoom(), {
+            duration: 1.5,
+            easeLinearity: 0.25
+        });
     }, [center, map]);
     return null;
 };
