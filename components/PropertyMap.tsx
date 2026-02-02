@@ -31,7 +31,7 @@ const ChangeView: React.FC<{ center: [number, number] }> = ({ center }) => {
 };
 
 export const PropertyMap: React.FC<PropertyMapProps> = ({ lat, lng, title }) => {
-    const position: [number, number] = [lat, lng];
+    const position = React.useMemo<[number, number]>(() => [lat, lng], [lat, lng]);
     const [mapType, setMapType] = React.useState<'STREET' | 'SATELLITE'>('STREET');
 
     // Custom Icon for Concierge Moeda

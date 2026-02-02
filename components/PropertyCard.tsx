@@ -6,7 +6,7 @@ interface PropertyCardProps {
   onClick: (id: string) => void;
 }
 
-export const PropertyCard: React.FC<PropertyCardProps> = ({ property, onClick }) => {
+export const PropertyCard = React.memo<PropertyCardProps>(({ property, onClick }) => {
   const [isFavorite, setIsFavorite] = React.useState(false);
 
   const handleFavoriteClick = (e: React.MouseEvent) => {
@@ -147,4 +147,4 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({ property, onClick })
       </div>
     </div>
   );
-};
+}, (prev, next) => prev.property === next.property);

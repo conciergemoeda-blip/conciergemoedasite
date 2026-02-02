@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { Property } from '../types';
-import { PropertyMap } from '../components/PropertyMap';
+// Lazy load map to avoid blocking main thread
+const PropertyMap = React.lazy(() => import('../components/PropertyMap').then(module => ({ default: module.PropertyMap })));
 import { ReviewSection } from '../components/ReviewSection';
 
 interface PropertyDetailsProps {
@@ -366,11 +367,20 @@ export const PropertyDetails: React.FC<PropertyDetailsProps> = ({ property, onBa
                             <p className="text-gray-500 mb-6">{property.location}</p>
 
                             {property.coordinates ? (
-                                <PropertyMap
-                                    lat={property.coordinates.lat}
-                                    lng={property.coordinates.lng}
-                                    title={property.title}
-                                />
+                                <React.Suspense fallback={
+                                    <div className="bg-gray-100 rounded-3xl h-[300px] md:h-[450px] flex items-center justify-center">
+                                        <div className="flex flex-col items-center gap-2 text-gray-400">
+                                            <span className="material-symbols-outlined text-4xl animate-pulse">map</span>
+                                            <span className="text-sm font-medium">Carregando mapa...</span>
+                                        </div>
+                                    </div>
+                                }>
+                                    <PropertyMap
+                                        lat={property.coordinates.lat}
+                                        lng={property.coordinates.lng}
+                                        title={property.title}
+                                    />
+                                </React.Suspense>
                             ) : (
                                 <div className="bg-gray-100 rounded-2xl h-[300px] flex items-center justify-center text-gray-400">
                                     Mapa indisponível

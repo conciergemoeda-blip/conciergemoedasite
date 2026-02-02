@@ -614,10 +614,10 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onPropertySelect
                         {/* Feature 2 */}
                         <div className="flex flex-col items-center group animate-fade-in-up" style={{ animationDelay: '200ms' }}>
                             <div className="w-16 h-16 bg-secondary/10 rounded-full flex items-center justify-center text-secondary mb-6 transition-all duration-300 group-hover:scale-110 group-hover:bg-secondary group-hover:shadow-lg">
-                                <span className="material-symbols-outlined text-3xl icon-filled group-hover:text-white transition-colors">forum</span>
+                                <span className="material-symbols-outlined text-3xl icon-filled group-hover:text-white transition-colors">handshake</span>
                             </div>
-                            <h3 className="font-bold text-xl mb-3 group-hover:text-secondary transition-colors">Suporte Personalizado</h3>
-                            <p className="text-gray-500 leading-relaxed">Tire dúvidas e receba indicações sobre a região diretamente pelo nosso WhatsApp.</p>
+                            <h3 className="font-bold text-xl mb-3 group-hover:text-secondary transition-colors">Negociação Direta</h3>
+                            <p className="text-gray-500 leading-relaxed">Sem intermediários. Combine valores, datas e detalhes diretamente com o proprietário.</p>
                         </div>
 
                         {/* Feature 3 */}

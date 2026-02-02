@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import { Navigation } from './components/Navigation';
-import { HomePage } from './pages/HomePage';
-import { PropertyDetails } from './pages/PropertyDetails';
-import { AdminDashboard } from './pages/AdminDashboard';
-import { LoginPage } from './pages/LoginPage';
+// Lazy Imports
+const HomePage = React.lazy(() => import('./pages/HomePage').then(module => ({ default: module.HomePage })));
+const PropertyDetails = React.lazy(() => import('./pages/PropertyDetails').then(module => ({ default: module.PropertyDetails })));
+const AdminDashboard = React.lazy(() => import('./pages/AdminDashboard').then(module => ({ default: module.AdminDashboard })));
+const LoginPage = React.lazy(() => import('./pages/LoginPage').then(module => ({ default: module.LoginPage })));
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { PropertiesProvider } from './contexts/PropertiesContext';
 import { Page, Property } from './types';
@@ -24,6 +25,12 @@ const AppContent: React.FC = () => {
   // Sync state with URL on mount and popstate
   useEffect(() => {
     const handleLocationChange = () => {
+      // Logic for /admin hidden route
+      if (window.location.pathname === '/admin') {
+        setCurrentPage('LOGIN');
+        return;
+      }
+
       const params = new URLSearchParams(window.location.search);
       const pageParam = params.get('p') as Page;
       const idParam = params.get('id');
@@ -120,7 +127,16 @@ const AppContent: React.FC = () => {
         <Navigation onNavigate={navigateTo} currentPage={currentPage} />
       )}
 
-      {renderPage()}
+      <Suspense fallback={
+        <div className="flex h-screen items-center justify-center">
+          <div className="flex flex-col items-center gap-4">
+            <div className="w-12 h-12 border-4 border-primary/20 border-t-primary rounded-full animate-spin"></div>
+            <p className="text-gray-500 font-medium animate-pulse">Carregando...</p>
+          </div>
+        </div>
+      }>
+        {renderPage()}
+      </Suspense>
 
       {/* Footer (only on public pages) */}
       {['HOME', 'DETAILS'].includes(currentPage) && (

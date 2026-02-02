@@ -421,6 +421,17 @@ export const AddPropertyForm: React.FC<AddPropertyFormProps> = ({ onSave, onCanc
     };
 
 
+    const handleFormKeyDown = (e: React.KeyboardEvent) => {
+        if (e.key === 'Enter') {
+            const target = e.target as HTMLElement;
+            // Allow enter on textareas (for new lines)
+            if (target.tagName.toLowerCase() === 'textarea') {
+                return;
+            }
+            e.preventDefault();
+        }
+    };
+
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
 
@@ -481,7 +492,7 @@ export const AddPropertyForm: React.FC<AddPropertyFormProps> = ({ onSave, onCanc
                     </div>
                 </div>
 
-                <form onSubmit={handleSubmit} className="space-y-8">
+                <form onSubmit={handleSubmit} onKeyDown={handleFormKeyDown} className="space-y-8">
                     {/* Step 1: Basic Info */}
                     {activeStep === 1 && (
                         <div className="space-y-6 animate-fade-in">

@@ -114,12 +114,6 @@ export const Navigation: React.FC<NavigationProps> = ({ onNavigate, currentPage 
           {/* CTA & Login */}
           <div className="hidden md:flex items-center gap-4">
             <button
-              onClick={() => onNavigate('LOGIN')}
-              className="text-sm font-semibold text-gray-600 hover:text-primary transition-colors"
-            >
-              Entrar
-            </button>
-            <button
               onClick={handleOwnerClick}
               className="inline-flex items-center justify-center rounded-full bg-primary px-6 py-2.5 text-sm font-bold text-white shadow-lg shadow-primary/30 hover:bg-primary-dark hover:-translate-y-0.5 transition-all duration-200 gap-2"
             >
@@ -171,13 +165,6 @@ export const Navigation: React.FC<NavigationProps> = ({ onNavigate, currentPage 
 
             <div className="h-px bg-gray-100 my-2 mx-2"></div>
 
-            <button
-              onClick={() => { onNavigate('LOGIN'); setIsMobileMenuOpen(false); }}
-              className="text-left font-medium text-gray-600 py-3 px-4 rounded-lg hover:bg-gray-50 transition-colors flex items-center gap-3"
-            >
-              <span className="material-symbols-outlined text-lg">login</span>
-              Área do Proprietário
-            </button>
 
             <button
               onClick={() => { handleOwnerClick(); setIsMobileMenuOpen(false); }}
