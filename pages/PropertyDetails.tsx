@@ -409,38 +409,7 @@ export const PropertyDetails: React.FC<PropertyDetailsProps> = ({ property, onBa
                                 </div>
                             </div>
 
-                            <div className="space-y-3 mb-6 bg-gray-50 p-4 rounded-xl border border-gray-100">
-                                {Boolean(property.price && property.price > 0) && (
-                                    <div className="flex justify-between text-sm">
-                                        <span className="text-gray-500">Diária (Seg a Qui)</span>
-                                        <span className="font-bold text-gray-900">R$ {property.price}</span>
-                                    </div>
-                                )}
-                                {Boolean(property.weekend_price && property.weekend_price > 0) && (
-                                    <div className="flex justify-between text-sm">
-                                        <span className="text-gray-500">Fim de Semana / Feriados</span>
-                                        <span className="font-bold text-gray-900">R$ {property.weekend_price}</span>
-                                    </div>
-                                )}
-                                {Boolean(property.seasonal_price && property.seasonal_price > 0) && (
-                                    <div className="flex justify-between text-sm">
-                                        <span className="text-gray-500 font-medium">Alta Temporada</span>
-                                        <span className="font-bold text-primary">R$ {property.seasonal_price}</span>
-                                    </div>
-                                )}
-                                {property.cleaning_fee && property.cleaning_fee > 0 && (
-                                    <div className="flex justify-between text-sm border-t border-gray-100 pt-2">
-                                        <span className="text-gray-500 font-medium">Taxa de Limpeza</span>
-                                        <span className="font-bold text-gray-900 text-xs">R$ {property.cleaning_fee} (única)</span>
-                                    </div>
-                                )}
-                                {property.min_stay && property.min_stay > 1 && (
-                                    <div className="flex justify-between text-sm border-t border-gray-100 pt-2">
-                                        <span className="text-gray-500 font-medium">Estadia Mínima</span>
-                                        <span className="font-bold text-gray-900 text-xs">{property.min_stay} diárias</span>
-                                    </div>
-                                )}
-                            </div>
+
 
                             <button
                                 onClick={handleReserveClick}
@@ -474,24 +443,7 @@ export const PropertyDetails: React.FC<PropertyDetailsProps> = ({ property, onBa
                             </div>
                         </div>
 
-                        {/* Mobile: Simple Pricing Badges */}
-                        <div className="flex flex-wrap gap-2 px-1">
-                            {property.weekend_price && property.weekend_price > 0 && (
-                                <span className="text-[10px] bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full font-bold">
-                                    FDS: R$ {property.weekend_price}
-                                </span>
-                            )}
-                            {property.cleaning_fee && property.cleaning_fee > 0 && (
-                                <span className="text-[10px] bg-blue-50 text-blue-600 px-2 py-0.5 rounded-full font-bold">
-                                    Limpeza: R$ {property.cleaning_fee}
-                                </span>
-                            )}
-                            {property.min_stay && property.min_stay > 1 && (
-                                <span className="text-[10px] bg-orange-50 text-orange-600 px-2 py-0.5 rounded-full font-bold">
-                                    Mín {property.min_stay} diárias
-                                </span>
-                            )}
-                        </div>
+
 
                         <button
                             onClick={handleMobileReserve}

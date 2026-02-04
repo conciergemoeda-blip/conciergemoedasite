@@ -25,9 +25,8 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onPropertySelect
     // Basic Search States
     // const [searchTerm, setSearchTerm] = useState(''); // Removed
     // const [locationFilter, setLocationFilter] = useState<string>(''); // Removed
+    // Basic Search States
     const [guestFilter, setGuestFilter] = useState<string>(''); // For guest picker string representation
-    const [guestsFilter, setGuestsFilter] = useState(2); // Numeric filter logic
-
 
     // Parallax scroll state
     const [scrollY, setScrollY] = useState(0);
@@ -39,21 +38,18 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onPropertySelect
     const searchBoxRef = useRef<HTMLDivElement>(null);
 
     // Advanced Filters States
-    // const [isFiltersOpen, setIsFiltersOpen] = useState(false); // Removed
     const [minPrice, setMinPrice] = useState<string>('');
     const [maxPrice, setMaxPrice] = useState<string>('');
-    // const [minBaths, setMinBaths] = useState<number>(0); // Removed
-    // const [selectedAmenities, setSelectedAmenities] = useState<string[]>([]); // Removed
 
     // Derived Filter Logic (combining Supabase data with UI filters)
     const filteredProperties = properties.filter(prop => {
         // 1. Guests
-        const matchesGuests = prop.guests >= (parseInt(guestFilter) || guestsFilter);
+        const matchesGuests = !guestFilter || prop.guests >= parseInt(guestFilter);
 
         // 2. Price Range
-        const price = prop.price;
-        const matchesMinPrice = !minPrice || price >= parseInt(minPrice);
-        const matchesMaxPrice = !maxPrice || price <= parseInt(maxPrice);
+        const effectivePrice = prop.price || prop.seasonal_price || prop.weekend_price || 0;
+        const matchesMinPrice = !minPrice || effectivePrice >= parseInt(minPrice);
+        const matchesMaxPrice = !maxPrice || effectivePrice <= parseInt(maxPrice);
 
         // 3. Active Status
         const isActive = !prop.tags.includes('Pausado' as any);
@@ -115,13 +111,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onPropertySelect
         setGuestFilter(newValue > 0 ? newValue.toString() : '');
     };
 
-    // Location Logic
-
-
-
-
     const handleApplyFilters = () => {
-        // setIsFiltersOpen(false); // Removed
         setIsGuestPickerOpen(false);
         setIsPricePickerOpen(false);
         // Smooth scroll to results
@@ -132,13 +122,8 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onPropertySelect
 
     const clearAllFilters = () => {
         setGuestFilter('');
-        setGuestsFilter(2);
-        // setLocationFilter('');
-        // setSearchTerm('');
         setMinPrice('');
         setMaxPrice('');
-        // setMinBaths(0);
-        // setSelectedAmenities([]);
     };
 
     // Derived values for UI rendering
