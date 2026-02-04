@@ -446,7 +446,7 @@ export const AddPropertyForm: React.FC<AddPropertyFormProps> = ({ onSave, onCanc
             return;
         }
 
-        if (!formData.title || !(formData.price || formData.seasonal_price) || !formData.imageUrl || !formData.ownerPhone || !formData.owner?.name) {
+        if (!formData.title || !(formData.price || formData.seasonal_price || formData.weekend_price) || !formData.imageUrl || !formData.ownerPhone || !formData.owner?.name) {
             showToast("Preencha todos os campos obrigatórios (incluindo pelo menos um preço).", "warning");
             return;
         }
