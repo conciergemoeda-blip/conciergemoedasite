@@ -3,6 +3,7 @@ import { Property } from '../types';
 // Lazy load map to avoid blocking main thread
 const PropertyMap = React.lazy(() => import('../components/PropertyMap').then(module => ({ default: module.PropertyMap })));
 import { ReviewSection } from '../components/ReviewSection';
+import { getWhatsAppLink } from '../utils/whatsapp';
 
 interface PropertyDetailsProps {
     property: Property;
@@ -70,11 +71,10 @@ export const PropertyDetails: React.FC<PropertyDetailsProps> = ({ property, onBa
 
     // WhatsApp Message Logic
     const openWhatsApp = () => {
-        let message = `Olá! Gostaria de reservar o imóvel *${property.title}*.`;
-        const encoded = encodeURIComponent(message);
+        const message = `Olá! Vi sua propriedade no site do Concierge Moeda, queria mais informações do imóvel *${property.title}*.`;
 
-        // Redirects to the specific property owner's phone number
-        window.open(`https://wa.me/${property.ownerPhone}?text=${encoded}`, '_blank');
+        // Redirects to the specific property owner's phone number using the helper
+        window.open(getWhatsAppLink(property.ownerPhone, message), '_blank');
     };
 
     const handleReserveClick = () => {

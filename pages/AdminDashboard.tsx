@@ -312,7 +312,15 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) =>
     const handleSaveSettings = async () => {
         setIsSavingSettings(true);
         try {
-            const cleanWhatsapp = `55${inputWhatsapp.replace(/\D/g, '')}`;
+            // Remove non-numeric characters
+            let cleanWhatsapp = inputWhatsapp.replace(/\D/g, '');
+
+            // Add 55 only if it seems to be missing (length 10 or 11 - standard BR format)
+            // If the user typed 55 explicitly (length 12 or 13), we keep it as is.
+            if (cleanWhatsapp.length === 10 || cleanWhatsapp.length === 11) {
+                cleanWhatsapp = `55${cleanWhatsapp}`;
+            }
+
             await updateSettings({
                 whatsapp: cleanWhatsapp,
                 email: inputEmail

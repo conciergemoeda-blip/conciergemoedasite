@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { LOGO_BASE64 } from '../constants_logo';
 import { useSettings } from '../contexts/SettingsContext';
+import { getWhatsAppLink } from '../utils/whatsapp';
 
 
 interface NavigationProps {
@@ -46,7 +47,8 @@ export const Navigation: React.FC<NavigationProps> = ({ onNavigate, currentPage 
   };
 
   const handleOwnerClick = () => {
-    window.open(`https://wa.me/${settings.whatsapp}?text=Ol%C3%A1%2C%20tenho%20um%20im%C3%B3vel%20em%20Moeda%20e%20gostaria%20de%20anunciar%20no%20Concierge.`, '_blank');
+    const message = "Olá! Gostaria de saber como anunciar meu imóvel no Concierge Moeda.";
+    window.open(getWhatsAppLink(settings.whatsapp, message), '_blank');
   };
 
 
