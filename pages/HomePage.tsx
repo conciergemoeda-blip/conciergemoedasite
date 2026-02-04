@@ -221,7 +221,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onPropertySelect
 
                         <h1 className="font-serif text-4xl sm:text-5xl md:text-7xl font-bold text-white mb-4 leading-tight drop-shadow-2xl">
                             Sítios e Chalés em <br className="md:hidden" />
-                            <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-200 to-white">Moeda MG</span>
+                            <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-200 to-white whitespace-nowrap">Moeda MG</span>
                         </h1>
 
                         <p className="text-base md:text-xl text-gray-200 max-w-xl font-light leading-relaxed mx-auto">
