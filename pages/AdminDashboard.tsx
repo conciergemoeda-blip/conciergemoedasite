@@ -103,6 +103,45 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) =>
         triggerGlobalToast(message, type);
     };
 
+    const compressImage = async (file: File): Promise<File> => {
+        if (file.size <= 1 * 1024 * 1024) return file;
+        return new Promise((resolve) => {
+            const img = new Image();
+            const url = URL.createObjectURL(file);
+            img.onload = () => {
+                URL.revokeObjectURL(url);
+                const canvas = document.createElement('canvas');
+                let width = img.width;
+                let height = img.height;
+                const MAX_WIDTH = 1920;
+                const MAX_HEIGHT = 1920;
+                if (width > height) {
+                    if (width > MAX_WIDTH) {
+                        height = Math.round((height * MAX_WIDTH) / width);
+                        width = MAX_WIDTH;
+                    }
+                } else {
+                    if (height > MAX_HEIGHT) {
+                        width = Math.round((width * MAX_HEIGHT) / height);
+                        height = MAX_HEIGHT;
+                    }
+                }
+                canvas.width = width;
+                canvas.height = height;
+                const ctx = canvas.getContext('2d');
+                if (!ctx) { resolve(file); return; }
+                ctx.drawImage(img, 0, 0, width, height);
+                canvas.toBlob((blob) => {
+                    if (blob) {
+                        resolve(new File([blob], file.name.replace(/\.[^/.]+$/, "") + ".jpg", { type: 'image/jpeg' }));
+                    } else { resolve(file); }
+                }, 'image/jpeg', 0.8);
+            };
+            img.onerror = () => { URL.revokeObjectURL(url); resolve(file); };
+            img.src = url;
+        });
+    };
+
     const handleSaveProperty = async (propertyData: Property) => {
         try {
             if (editingProperty) {
@@ -225,13 +264,14 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) =>
         // Upload to Supabase Storage
         setProfileLoading(true);
         try {
-            const fileExt = file.name.split('.').pop();
+            const compressedFile = await compressImage(file);
+            const fileExt = compressedFile.name.split('.').pop();
             const fileName = `${Math.random()}.${fileExt}`;
             const filePath = `avatars/${fileName}`;
 
             let { error: uploadError } = await supabase.storage
                 .from('avatars')
-                .upload(filePath, file);
+                .upload(filePath, compressedFile);
 
             if (uploadError) throw uploadError;
 
@@ -407,6 +447,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) =>
                                                     src={settings.bannerUrl || "https://images.unsplash.com/photo-1470770841072-f978cf4d019e?q=70&w=1400&auto=format&fit=crop"}
                                                     alt="Banner Atual"
                                                     className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                                                    style={{ filter: 'brightness(0.8)' }}
                                                 />
                                                 <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                                                     <button
@@ -430,13 +471,14 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) =>
 
                                                     try {
                                                         setIsSavingSettings(true);
-                                                        const fileExt = file.name.split('.').pop();
+                                                        const compressedFile = await compressImage(file);
+                                                        const fileExt = compressedFile.name.split('.').pop();
                                                         const fileName = `banner_${Date.now()}.${fileExt}`;
-                                                        const filePath = `property-images/${fileName}`; // Reusing bucket
+                                                        const filePath = `banners/${fileName}`;
 
                                                         const { error: uploadError } = await supabase.storage
                                                             .from('property-images')
-                                                            .upload(filePath, file);
+                                                            .upload(filePath, compressedFile);
 
                                                         if (uploadError) throw uploadError;
 

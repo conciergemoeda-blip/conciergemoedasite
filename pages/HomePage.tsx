@@ -204,7 +204,8 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onPropertySelect
                             className="absolute inset-0 bg-cover bg-center bg-no-repeat transition-transform duration-1000"
                             style={{
                                 backgroundImage: `url("${settings.bannerUrl || 'https://images.unsplash.com/photo-1470770841072-f978cf4d019e?q=70&w=1400&auto=format&fit=crop'}")`,
-                                transform: `translateY(${scrollY * 0.5}px)` // Parallax effect
+                                transform: `translateY(${scrollY * 0.5}px)`, // Parallax effect
+                                filter: 'brightness(0.8)'
                             }}
                         ></div>
 

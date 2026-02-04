@@ -74,9 +74,9 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
                 .from('site_settings')
                 .upsert({
                     id: 'main',
-                    whatsapp: newSettings.whatsapp,
-                    email: newSettings.email,
-                    banner_url: newSettings.bannerUrl,
+                    whatsapp: newSettings.whatsapp ?? settings.whatsapp,
+                    email: newSettings.email ?? settings.email,
+                    banner_url: newSettings.bannerUrl ?? settings.bannerUrl,
                     updated_at: new Date().toISOString()
                 });
 
