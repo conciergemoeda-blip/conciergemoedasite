@@ -309,7 +309,7 @@ export const PropertyDetails: React.FC<PropertyDetailsProps> = ({ property, onBa
                                         <img src={property.owner.avatar} alt={property.owner.name} className="w-full h-full object-cover" />
                                     </div>
                                     <h3 className="font-bold text-xl text-gray-900 mb-1">{property.owner.name}</h3>
-                                    <p className="text-xs text-gray-500 font-medium mb-4">{property.owner.joinedDate}</p>
+
 
                                     {property.owner.isSuperhost && (
                                         <div className="flex items-center gap-1 text-xs font-bold text-gray-900 mb-1">
