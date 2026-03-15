@@ -60,3 +60,11 @@ export interface User {
   avatar: string;
   role: 'admin' | 'user';
 }
+
+export interface AnalyticsEvent {
+  id: string;
+  created_at: string;
+  event_type: 'PAGE_VIEW' | 'PROPERTY_VIEW';
+  property_id?: string | null;
+  path?: string;
+}

@@ -11,6 +11,7 @@ import { Page, Property } from './types';
 import { useProperties } from './hooks/useProperties';
 import { LOGO_BASE64 } from './constants_logo';
 import { ToastProvider } from './components/Toast';
+import { useAnalytics } from './hooks/useAnalytics';
 
 import { SettingsProvider, useSettings } from './contexts/SettingsContext';
 
@@ -21,6 +22,12 @@ const AppContent: React.FC = () => {
   const { user, loading: authLoading } = useAuth();
   const { settings } = useSettings();
   const { properties } = useProperties();
+  const { trackPageView } = useAnalytics();
+
+  // Track page views
+  useEffect(() => {
+    trackPageView(window.location.pathname + window.location.search);
+  }, [currentPage, selectedPropertyId]);
 
   // Sync state with URL on mount and popstate
   useEffect(() => {

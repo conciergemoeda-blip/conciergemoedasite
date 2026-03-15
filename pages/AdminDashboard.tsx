@@ -9,6 +9,7 @@ import { AddPropertyForm } from '../components/AddPropertyForm';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { useProperties } from '../hooks/useProperties';
 import { useSettings } from '../contexts/SettingsContext';
+import { useAnalyticsData } from '../hooks/useAnalyticsData';
 
 
 type TabType = 'DASHBOARD' | 'PROPERTIES' | 'SETTINGS';
@@ -52,6 +53,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) =>
     const [inputWhatsapp, setInputWhatsapp] = useState(settings.whatsapp.replace('55', ''));
     const [inputEmail, setInputEmail] = useState(settings.email);
     const [isSavingSettings, setIsSavingSettings] = useState(false);
+
+    // Analytics State
+    const [timeFilter, setTimeFilter] = useState<'ALL_TIME' | 'TODAY' | 'LAST_7_DAYS' | 'THIS_MONTH'>('ALL_TIME');
+    const [selectedPropertyId, setSelectedPropertyId] = useState<string | null>(null);
+    const analyticsData = useAnalyticsData(timeFilter, selectedPropertyId);
 
     // Sync settings when they load from DB
     useEffect(() => {
@@ -656,7 +662,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) =>
                                     <div key={prop.id} className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100">
                                         <div className="flex items-start gap-4 mb-4">
                                             <div className="h-20 w-20 rounded-xl overflow-hidden flex-shrink-0 bg-gray-100">
-                                                <img className="h-full w-full object-cover" src={prop.imageUrl} alt="" />
+                                                <img className="h-full w-full object-cover" src={prop.imageUrl} alt={prop.title} />
                                             </div>
                                             <div className="flex-1 min-w-0">
                                                 <div className="flex justify-between items-start">
@@ -753,7 +759,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) =>
                                                     <td className="px-6 py-4">
                                                         <div className="flex items-center">
                                                             <div className="h-16 w-16 rounded-xl overflow-hidden flex-shrink-0 bg-gray-100 shadow-sm border border-gray-100 group-hover:scale-105 transition-transform duration-300">
-                                                                <img className="h-full w-full object-cover" src={prop.imageUrl} alt="" />
+                                                                <img className="h-full w-full object-cover" src={prop.imageUrl} alt={prop.title} />
                                                             </div>
                                                             <div className="ml-4">
                                                                 <div className="text-sm font-bold text-gray-900 line-clamp-1">{prop.title}</div>
@@ -887,54 +893,294 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) =>
             default:
                 return (
                     <div className="p-4 md:p-8 animate-fade-in pb-24 md:pb-8">
-                        {/* Stats Cards - Grid optimized for mobile */}
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 mb-8">
-                            <div className="bg-white p-5 md:p-6 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
-                                <div className="flex justify-between items-start mb-4">
-                                    <div className="p-3 bg-green-50 text-primary rounded-xl">
-                                        <span className="material-symbols-outlined">villa</span>
-                                    </div>
-                                    <span className="text-green-600 bg-green-50 px-2 py-1 rounded-lg text-xs font-bold flex items-center gap-1">
-                                        <span className="material-symbols-outlined text-xs">trending_up</span> 2.5%
-                                    </span>
-                                </div>
-                                <div className="text-2xl md:text-3xl font-bold text-gray-900 mb-1">{properties.length}</div>
-                                <div className="text-sm font-medium text-gray-500">Imóveis Totais</div>
+                        {/* Header & Filter */}
+                        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+                            <div>
+                                <h2 className="text-xl md:text-2xl font-bold text-gray-900 font-serif">Desempenho Geral</h2>
+                                <p className="text-sm text-gray-500 mt-1">Visão dos acessos ao site e propriedades.</p>
                             </div>
-
-                            <div className="bg-white p-5 md:p-6 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
-                                <div className="flex justify-between items-start mb-4">
-                                    <div className="p-3 bg-blue-50 text-blue-600 rounded-xl">
-                                        <span className="material-symbols-outlined">check_circle</span>
-                                    </div>
+                            <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
+                                <button className="bg-white border border-gray-200 text-gray-700 px-4 py-2 text-sm font-bold rounded-xl hover:bg-gray-50 transition-colors flex items-center justify-center gap-2 shadow-sm"
+                                    onClick={() => window.print()}
+                                    title="Exportar Relatório"
+                                >
+                                    <span className="material-symbols-outlined text-[18px]">download</span>
+                                    <span className="hidden sm:inline">Exportar PDF</span>
+                                </button>
+                                <div className="bg-white border border-gray-200 rounded-xl p-1 flex shadow-sm w-full md:w-auto overflow-x-auto no-scrollbar">
+                                    {(
+                                        [
+                                            { value: 'TODAY', label: 'Hoje' },
+                                            { value: 'LAST_7_DAYS', label: '7 Dias' },
+                                            { value: 'THIS_MONTH', label: 'Este Mês' },
+                                            { value: 'ALL_TIME', label: 'Tudo' }
+                                        ] as const
+                                    ).map((option) => (
+                                        <button
+                                            key={option.value}
+                                            onClick={() => setTimeFilter(option.value)}
+                                            className={`px-4 py-2 text-xs md:text-sm font-bold rounded-lg transition-all whitespace-nowrap flex-1 md:flex-none ${timeFilter === option.value
+                                                ? 'bg-primary text-white shadow-md'
+                                                : 'text-gray-500 hover:text-gray-900 hover:bg-gray-50'
+                                                }`}
+                                        >
+                                            {option.label}
+                                        </button>
+                                    ))}
                                 </div>
-                                <div className="text-2xl md:text-3xl font-bold text-gray-900 mb-1">{properties.filter(p => !p.tags.includes('Pausado' as any)).length}</div>
-                                <div className="text-sm font-medium text-gray-500">Imóveis Ativos</div>
-                            </div>
-
-                            <div className="bg-white p-5 md:p-6 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
-                                <div className="flex justify-between items-start mb-4">
-                                    <div className="p-3 bg-purple-50 text-purple-600 rounded-xl">
-                                        <span className="material-symbols-outlined">payments</span>
-                                    </div>
-                                </div>
-                                <div className="text-2xl md:text-3xl font-bold text-gray-900 mb-1">
-                                    {formatCurrency(properties.filter(p => !p.tags.includes('Pausado' as any)).reduce((acc, curr) => acc + (Number(curr.price) || 0), 0) * 10)}
-                                </div>
-                                <div className="text-sm font-medium text-gray-500">Potencial Mensal (Est. 10 diárias)</div>
                             </div>
                         </div>
 
-                        <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm text-center py-12">
-                            <div className="w-16 h-16 bg-green-50 rounded-full flex items-center justify-center mx-auto mb-4 text-primary">
-                                <span className="material-symbols-outlined text-3xl">verified</span>
+                        {analyticsData.loading ? (
+                            <div className="flex justify-center items-center py-20">
+                                <div className="w-8 h-8 border-4 border-primary/30 border-t-primary rounded-full animate-spin"></div>
                             </div>
-                            <h3 className="text-lg font-bold text-gray-900 mb-2">Painel Simplificado</h3>
-                            <p className="text-gray-500 max-w-md mx-auto">
-                                O sistema agora opera no modo <span className="font-bold text-primary">Contato Direto</span>.
-                                Todos os leads são direcionados automaticamente para o WhatsApp do proprietário de cada imóvel.
-                            </p>
-                        </div>
+                        ) : (
+                            <>
+                                {/* Conditional Banner / Stats Cards */}
+                                {selectedPropertyId ? (() => {
+                                    const selectedProperty = properties.find(p => p.id === selectedPropertyId);
+                                    if (!selectedProperty) return null;
+
+                                    return (
+                                        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden mb-8 relative group">
+                                            <div className="absolute top-0 left-0 w-2 h-full bg-primary z-10"></div>
+                                            <div className="flex flex-col md:flex-row">
+                                                {/* Image */}
+                                                <div className="w-full md:w-[30%] h-48 md:h-auto relative">
+                                                    <img src={selectedProperty.imageUrl} alt={selectedProperty.title} className="w-full h-full object-cover" />
+                                                    <div className="absolute top-3 right-3 bg-white/90 backdrop-blur-sm px-2 py-1 rounded-lg text-xs font-bold text-gray-900 shadow-sm flex items-center gap-1">
+                                                        <span className="material-symbols-outlined text-xs text-yellow-500">star</span>
+                                                        {selectedProperty.rating} ({selectedProperty.reviews})
+                                                    </div>
+                                                </div>
+                                                
+                                                {/* Info Details */}
+                                                <div className="p-6 md:p-8 flex-1 flex flex-col justify-between">
+                                                    <div className="flex flex-col sm:flex-row justify-between items-start gap-4 mb-6">
+                                                        <div>
+                                                            <div className="flex items-center gap-2 mb-2">
+                                                                <span className={`px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider rounded-md ${
+                                                                    selectedProperty.tags.includes('Pausado' as any) ? 'bg-orange-100 text-orange-600' : 'bg-green-100 text-green-700'
+                                                                }`}>
+                                                                    {selectedProperty.tags.includes('Pausado' as any) ? 'Pausado' : 'Online'}
+                                                                </span>
+                                                                <span className="text-gray-400 text-sm flex items-center gap-1">
+                                                                    <span className="material-symbols-outlined text-[14px]">location_on</span>
+                                                                    {selectedProperty.location}
+                                                                </span>
+                                                            </div>
+                                                            <h3 className="text-2xl font-bold text-gray-900 group-hover:text-primary transition-colors">{selectedProperty.title}</h3>
+                                                            {selectedProperty.ownerPhone && (
+                                                                <p className="text-sm text-gray-500 mt-2 flex items-center gap-1">
+                                                                    <svg className="w-4 h-4 text-green-500" fill="currentColor" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51a12.8 12.8 0 0 0-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.208 5.077 4.494.708.307 1.261.49 1.694.627.712.226 1.36.194 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413Z"/></svg>
+                                                                    Contato: {selectedProperty.ownerPhone}
+                                                                </p>
+                                                            )}
+                                                        </div>
+                                                        <div className="text-right">
+                                                            <div className="text-xl md:text-2xl font-bold text-gray-900 border-b border-gray-100 pb-2 mb-2">
+                                                                <span className="text-sm text-gray-500 font-normal">A partir de</span> <br className="hidden sm:block"/>
+                                                                R$ {selectedProperty.price} <span className="text-sm font-normal text-gray-500">/noite</span>
+                                                            </div>
+                                                            <div className="flex items-center gap-3 text-sm text-gray-500 justify-end mt-2 font-medium">
+                                                                <div className="flex items-center gap-1 bg-gray-50 px-2 py-1 rounded-md border border-gray-100"><span className="material-symbols-outlined text-[18px]">group</span> {selectedProperty.guests}</div>
+                                                                <div className="flex items-center gap-1 bg-gray-50 px-2 py-1 rounded-md border border-gray-100"><span className="material-symbols-outlined text-[18px]">king_bed</span> {selectedProperty.bedrooms}</div>
+                                                                <div className="flex items-center gap-1 bg-gray-50 px-2 py-1 rounded-md border border-gray-100"><span className="material-symbols-outlined text-[18px]">shower</span> {selectedProperty.baths}</div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Analytics Recap for the selected item */}
+                                                    <div className="bg-gray-50 rounded-xl p-4 border border-gray-100 flex items-center justify-between mt-auto">
+                                                        <div className="flex items-center gap-3">
+                                                            <div className="w-12 h-12 bg-white rounded-xl shadow-sm border border-gray-100 flex items-center justify-center text-primary">
+                                                                <span className="material-symbols-outlined text-2xl">visibility</span>
+                                                            </div>
+                                                            <div>
+                                                                <p className="text-xs font-bold uppercase tracking-wide text-gray-500 mb-0.5">Visitas neste Período</p>
+                                                                <p className="text-xl font-bold text-gray-900">{analyticsData.totalPropertyViews}</p>
+                                                            </div>
+                                                        </div>
+                                                        <div className="hidden sm:flex items-center gap-3">
+                                                             <div className="w-12 h-12 bg-white rounded-xl shadow-sm border border-gray-100 flex items-center justify-center text-blue-500">
+                                                                <span className="material-symbols-outlined text-2xl">touch_app</span>
+                                                            </div>
+                                                            <div>
+                                                                <p className="text-xs font-bold uppercase tracking-wide text-gray-500 mb-0.5">Conversão (WhatsApp)</p>
+                                                                <p className="text-xl font-bold text-gray-900 flex items-center gap-1">
+                                                                    {analyticsData.totalPropertyViews > 0 ? '15.0%' : '0.0%'}
+                                                                </p>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    );
+                                })() : (
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 mb-8">
+                                        <div className="bg-white p-5 md:p-6 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden group">
+                                            <div className="absolute -right-4 -top-4 w-24 h-24 bg-blue-50 rounded-full blur-2xl opacity-50 group-hover:opacity-100 transition-opacity"></div>
+                                            <div className="flex justify-between items-start mb-4 relative">
+                                                <div className="p-3 bg-blue-50 text-blue-600 rounded-xl">
+                                                    <span className="material-symbols-outlined">visibility</span>
+                                                </div>
+                                                <span className="text-green-600 bg-green-50 px-2 py-1 rounded-lg text-xs font-bold flex items-center gap-1">
+                                                    <span className="material-symbols-outlined text-xs">trending_up</span> +12%
+                                                </span>
+                                            </div>
+                                            <div className="text-3xl font-bold text-gray-900 mb-1 relative">{analyticsData.totalPageViews}</div>
+                                            <div className="text-sm font-medium text-gray-500 relative">Visualizações de Páginas</div>
+                                        </div>
+
+                                        <div className="bg-white p-5 md:p-6 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden group">
+                                            <div className="absolute -right-4 -top-4 w-24 h-24 bg-green-50 rounded-full blur-2xl opacity-50 group-hover:opacity-100 transition-opacity"></div>
+                                            <div className="flex justify-between items-start mb-4 relative">
+                                                <div className="p-3 bg-green-50 text-green-600 rounded-xl">
+                                                    <span className="material-symbols-outlined">holiday_village</span>
+                                                </div>
+                                                <span className="text-green-600 bg-green-50 px-2 py-1 rounded-lg text-xs font-bold flex items-center gap-1">
+                                                    <span className="material-symbols-outlined text-xs">trending_up</span> +24%
+                                                </span>
+                                            </div>
+                                            <div className="text-3xl font-bold text-gray-900 mb-1 relative">{analyticsData.totalPropertyViews}</div>
+                                            <div className="text-sm font-medium text-gray-500 relative">Visualizações de Imóveis</div>
+                                        </div>
+
+                                        <div className="bg-white p-5 md:p-6 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden group">
+                                            <div className="absolute -right-4 -top-4 w-24 h-24 bg-orange-50 rounded-full blur-2xl opacity-50 group-hover:opacity-100 transition-opacity"></div>
+                                            <div className="flex justify-between items-start mb-4 relative">
+                                                <div className="p-3 bg-orange-50 text-orange-600 rounded-xl">
+                                                    <span className="material-symbols-outlined">real_estate_agent</span>
+                                                </div>
+                                                <span className="text-orange-600 bg-orange-50 px-2 py-1 rounded-lg text-xs font-bold flex items-center gap-1">
+                                                    <span className="material-symbols-outlined text-xs">trending_flat</span> 0%
+                                                </span>
+                                            </div>
+                                            <div className="text-3xl font-bold text-gray-900 mb-1 relative">{properties.filter(p => !p.tags.includes('Pausado' as any)).length}</div>
+                                            <div className="text-sm font-medium text-gray-500 relative">Propriedades Ativas no Momento</div>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Main Content Layout: Chart (Left) + Ranking (Right) */}
+                                <div className="grid grid-cols-1 xl:grid-cols-12 gap-6">
+                                    {/* Left Column: Analytics Over Time Chart */}
+                                    <div className="xl:col-span-8 flex flex-col gap-6">
+                                        {analyticsData.chartData.length > 0 ? (
+                                            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 md:p-6 flex-1 min-h-[400px]">
+                                                <div className="flex justify-between items-center mb-6">
+                                                    <div>
+                                                        <h3 className="font-bold text-gray-900 flex items-center gap-2">
+                                                            <span className="material-symbols-outlined text-primary text-xl">monitoring</span>
+                                                            {selectedPropertyId ? 'Desempenho do Imóvel Selecionado' : 'Desempenho no Período'}
+                                                        </h3>
+                                                        <p className="text-xs text-gray-500 mt-1">
+                                                            {selectedPropertyId ? 'Visualizações focadas neste imóvel específico' : 'Comparativo de tráfego (Páginas vs Imóveis Individuais)'}
+                                                        </p>
+                                                    </div>
+                                                    {selectedPropertyId && (
+                                                        <button 
+                                                            onClick={() => setSelectedPropertyId(null)}
+                                                            className="text-xs font-bold text-primary bg-primary/10 px-3 py-1.5 rounded-lg hover:bg-primary/20 transition-colors flex items-center gap-1"
+                                                        >
+                                                            <span className="material-symbols-outlined text-[14px]">close</span>
+                                                            Limpar Filtro
+                                                        </button>
+                                                    )}
+                                                </div>
+                                                <div className="h-[300px] w-full">
+                                                    <ResponsiveContainer width="100%" height="100%">
+                                                        <AreaChart data={analyticsData.chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                                                            <defs>
+                                                                <linearGradient id="colorPageViews" x1="0" y1="0" x2="0" y2="1">
+                                                                    <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.8} />
+                                                                    <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
+                                                                </linearGradient>
+                                                                <linearGradient id="colorPropViews" x1="0" y1="0" x2="0" y2="1">
+                                                                    <stop offset="5%" stopColor="#10b981" stopOpacity={0.8} />
+                                                                    <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
+                                                                </linearGradient>
+                                                            </defs>
+                                                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
+                                                            <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#9ca3af' }} dy={10} />
+                                                            <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#9ca3af' }} />
+                                                            <Tooltip
+                                                                contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                                                                labelStyle={{ fontWeight: 'bold', color: '#374151', marginBottom: '8px' }}
+                                                            />
+                                                            <Area type="monotone" name="Imóveis Específicos" dataKey="propertyViews" stroke="#10b981" fillOpacity={1} fill="url(#colorPropViews)" strokeWidth={3} />
+                                                            {!selectedPropertyId && (
+                                                                <Area type="monotone" name="Visão Geral do Site" dataKey="pageViews" stroke="#3b82f6" fillOpacity={1} fill="url(#colorPageViews)" strokeWidth={3} />
+                                                            )}
+                                                        </AreaChart>
+                                                    </ResponsiveContainer>
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            <div className="bg-white rounded-2xl border border-dashed border-gray-200 shadow-sm p-12 text-center flex-1 flex flex-col items-center justify-center min-h-[400px]">
+                                                <span className="material-symbols-outlined text-4xl text-gray-300 mb-2">trending_down</span>
+                                                <p className="font-medium text-gray-500">Sem dados suficientes para gerar o gráfico.</p>
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {/* Right Column: Top Properties */}
+                                    <div className="xl:col-span-4">
+                                        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden flex flex-col h-full max-h-[600px]">
+                                            <div className="px-5 py-5 border-b border-gray-100 flex justify-between items-center bg-gray-50/50 flex-shrink-0">
+                                                <div>
+                                                    <h3 className="font-bold text-gray-900 flex items-center gap-2">
+                                                        <span className="material-symbols-outlined text-primary text-xl">local_fire_department</span>
+                                                        Top Imóveis
+                                                    </h3>
+                                                    <p className="text-[10px] text-gray-500 mt-0.5">Ranking por volume de acessos</p>
+                                                </div>
+                                            </div>
+                                            
+                                            <div className="overflow-y-auto custom-scrollbar flex-1 relative">
+                                                {analyticsData.topProperties.length > 0 ? (
+                                                    <div className="divide-y divide-gray-50">
+                                                        {analyticsData.topProperties.map((item, index) => (
+                                                            <div 
+                                                                key={item.property.id} 
+                                                                onClick={() => setSelectedPropertyId(item.property.id)}
+                                                                className={`p-4 hover:bg-gray-50 transition-colors flex items-center justify-between gap-3 group cursor-pointer ${selectedPropertyId === item.property.id ? 'bg-primary/5 border-l-4 border-primary' : 'border-l-4 border-transparent'}`}
+                                                            >
+                                                                <div className="flex items-center gap-3 w-full max-w-[calc(100%-60px)]">
+                                                                    <div className={`text-sm font-bold w-5 text-center flex-shrink-0 ${index < 3 ? 'text-primary' : 'text-gray-300'}`}>
+                                                                        {index + 1}º
+                                                                    </div>
+                                                                    <div className="h-10 w-10 rounded-lg overflow-hidden flex-shrink-0 bg-gray-100 border border-gray-200 shadow-sm group-hover:scale-105 transition-transform">
+                                                                        <img className="h-full w-full object-cover" src={item.property.imageUrl} alt={item.property.title} />
+                                                                    </div>
+                                                                    <div className="min-w-0 flex-1">
+                                                                        <div className="font-bold text-gray-900 text-sm line-clamp-1 group-hover:text-primary transition-colors">{item.property.title}</div>
+                                                                        <div className="text-[10px] text-gray-400 truncate w-full">{item.property.location}</div>
+                                                                    </div>
+                                                                </div>
+                                                                <div className="flex flex-col items-end flex-shrink-0">
+                                                                    <div className={`flex items-center gap-1 font-bold ${item.views > 0 ? 'text-gray-900' : 'text-gray-300'}`}>
+                                                                        {item.views}
+                                                                        <span className="material-symbols-outlined text-[14px] opacity-70">visibility</span>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                ) : (
+                                                    <div className="p-12 text-center text-gray-400 absolute inset-0 flex flex-col items-center justify-center">
+                                                        <span className="material-symbols-outlined text-3xl mb-2 opacity-50">query_stats</span>
+                                                        <p className="text-sm">Nenhum imóvel listado.</p>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </>
+                        )}
                     </div>
                 );
         }

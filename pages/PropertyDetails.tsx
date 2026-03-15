@@ -4,6 +4,7 @@ import { Property } from '../types';
 const PropertyMap = React.lazy(() => import('../components/PropertyMap').then(module => ({ default: module.PropertyMap })));
 import { ReviewSection } from '../components/ReviewSection';
 import { getWhatsAppLink } from '../utils/whatsapp';
+import { useAnalytics } from '../hooks/useAnalytics';
 
 interface PropertyDetailsProps {
     property: Property;
@@ -11,6 +12,7 @@ interface PropertyDetailsProps {
 }
 
 export const PropertyDetails: React.FC<PropertyDetailsProps> = ({ property, onBack }) => {
+    const { trackPropertyView } = useAnalytics();
     const [isGalleryOpen, setIsGalleryOpen] = useState(false);
     const [currentImageIndex, setCurrentImageIndex] = useState(0);
     const [touchStart, setTouchStart] = useState<number | null>(null);
@@ -114,6 +116,7 @@ export const PropertyDetails: React.FC<PropertyDetailsProps> = ({ property, onBa
     // SEO and Scroll Management
     useEffect(() => {
         window.scrollTo(0, 0);
+        trackPropertyView(property.id, window.location.pathname + window.location.search);
 
         if (property) {
             const seoTitle = `${property.title} | Aluguel em Moeda, MG`;
