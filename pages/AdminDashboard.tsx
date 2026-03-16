@@ -1065,12 +1065,14 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) =>
                                                         </div>
                                                         <div className="hidden sm:flex items-center gap-3">
                                                              <div className="w-12 h-12 bg-white rounded-xl shadow-sm border border-gray-100 flex items-center justify-center text-blue-500">
-                                                                <span className="material-symbols-outlined text-2xl">touch_app</span>
+                                                                <span className="material-symbols-outlined text-2xl">percent</span>
                                                             </div>
                                                             <div>
-                                                                <p className="text-xs font-bold uppercase tracking-wide text-gray-500 mb-0.5">Conversão (WhatsApp)</p>
+                                                                <p className="text-xs font-bold uppercase tracking-wide text-gray-500 mb-0.5">% do Total de Visitas</p>
                                                                 <p className="text-xl font-bold text-gray-900 flex items-center gap-1">
-                                                                    {analyticsData.totalPropertyViews > 0 ? '15.0%' : '0.0%'}
+                                                                    {analyticsData.topProperties.reduce((sum, p) => sum + p.views, 0) > 0
+                                                                        ? ((analyticsData.totalPropertyViews / analyticsData.topProperties.reduce((sum, p) => sum + p.views, 0)) * 100).toFixed(1) + '%'
+                                                                        : '0.0%'}
                                                                 </p>
                                                             </div>
                                                         </div>
