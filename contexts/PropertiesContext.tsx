@@ -31,6 +31,7 @@ const dbToProperty = (dbData: any): Property => {
             location: dbData.location || 'Sem Localização',
             imageUrl: dbData.image_url || '',
             gallery: dbData.gallery || [],
+            featured_photos: dbData.featured_photos || [],
             amenities: dbData.amenities || [],
             ownerPhone: dbData.owner_phone || '',
             owner: {
@@ -75,6 +76,7 @@ const dbToProperty = (dbData: any): Property => {
             location: '',
             imageUrl: '',
             gallery: [],
+            featured_photos: [],
             amenities: [],
             ownerPhone: '',
             owner: { name: 'Erro', avatar: '', isSuperhost: false, joinedDate: '', responseRate: '', responseTime: '' },
@@ -96,6 +98,7 @@ const propertyToDb = async (p: Property) => {
         location: p.location,
         image_url: p.imageUrl,
         gallery: p.gallery || [],
+        featured_photos: p.featured_photos || [],
         amenities: p.amenities || [],
         owner_id: user?.id || null, // ✅ New: Track property owner
         owner_phone: p.ownerPhone || '',
@@ -136,7 +139,7 @@ export const PropertiesProvider: React.FC<{ children: React.ReactNode }> = ({ ch
 
             const { data, count, error } = await supabase
                 .from('properties')
-                .select('id, title, description, price, weekend_price, seasonal_price, cleaning_fee, min_stay, location, image_url, gallery, amenities, owner_id, owner_phone, owner_name, owner_bio, owner_avatar_url, guests, bedrooms, beds, baths, lat, lng, rating, reviews_count, featured, active, created_at', { count: 'exact' })
+                .select('id, title, description, price, weekend_price, seasonal_price, cleaning_fee, min_stay, location, image_url, gallery, featured_photos, amenities, owner_id, owner_phone, owner_name, owner_bio, owner_avatar_url, guests, bedrooms, beds, baths, lat, lng, rating, reviews_count, featured, active, created_at', { count: 'exact' })
                 .order('created_at', { ascending: false })
                 .range(from, to);
 

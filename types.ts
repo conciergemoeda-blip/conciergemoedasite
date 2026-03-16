@@ -17,6 +17,7 @@ export interface Property {
   baths: number;
   imageUrl: string;
   gallery: string[];
+  featured_photos?: string[];
   amenities: string[];
   tags: ('Superhost' | 'Novo' | 'Ecológico')[];
   featured?: boolean;

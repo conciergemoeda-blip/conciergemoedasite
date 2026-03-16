@@ -40,6 +40,7 @@ export const AddPropertyForm: React.FC<AddPropertyFormProps> = ({ onSave, onCanc
         baths: 1,
         imageUrl: '',
         gallery: [],
+        featured_photos: [],
         amenities: [],
         tags: ['Novo'],
         ownerPhone: '',
@@ -400,11 +401,31 @@ export const AddPropertyForm: React.FC<AddPropertyFormProps> = ({ onSave, onCanc
         }
     };
 
-    const handleRemoveGalleryImage = (index: number) => {
+    const handleRemoveGalleryImage = (url: string) => {
         setFormData(prev => ({
             ...prev,
-            gallery: prev.gallery?.filter((_, i) => i !== index)
+            gallery: prev.gallery?.filter(img => img !== url),
+            featured_photos: prev.featured_photos?.filter(img => img !== url)
         }));
+    };
+
+    const handleToggleFeatured = (url: string) => {
+        setFormData(prev => {
+            const current = prev.featured_photos || [];
+            if (current.includes(url)) {
+                return { ...prev, featured_photos: current.filter(img => img !== url) };
+            } else {
+                return { ...prev, featured_photos: [...current, url] };
+            }
+        });
+    };
+
+    const getSortedGallery = (): string[] => {
+        const gallery = formData.gallery || [];
+        const featured = formData.featured_photos || [];
+        const featuredImages = gallery.filter(img => featured.includes(img));
+        const normalImages = gallery.filter(img => !featured.includes(img));
+        return [...featuredImages, ...normalImages];
     };
 
     const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -435,8 +456,8 @@ export const AddPropertyForm: React.FC<AddPropertyFormProps> = ({ onSave, onCanc
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
 
-        // Prevent saving if not on the last step
-        if (activeStep < 3) {
+        // For new properties: enforce step flow. For editing: allow save from any step.
+        if (!isEditing && activeStep < 3) {
             setActiveStep(prev => prev + 1);
             return;
         }
@@ -842,32 +863,70 @@ export const AddPropertyForm: React.FC<AddPropertyFormProps> = ({ onSave, onCanc
                                 </div>
 
                                 {formData.gallery && formData.gallery.length > 0 ? (
-                                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                                        {formData.gallery.map((img, index) => (
-                                            <div key={index} className="relative group aspect-square rounded-xl overflow-hidden border border-gray-200">
-                                                <img src={img} alt={`Gallery ${index}`} className="w-full h-full object-cover" />
-                                                <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-100 transition-opacity">
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => handleRemoveGalleryImage(index)}
-                                                        className="bg-red-500/90 text-white p-2 rounded-full hover:bg-red-600 transition-colors shadow-sm"
-                                                        title="Remover"
-                                                    >
-                                                        <span className="material-symbols-outlined text-sm font-bold">delete</span>
-                                                    </button>
-                                                </div>
+                                    <>
+                                        {(formData.featured_photos?.length || 0) > 0 && (
+                                            <div className="flex items-center gap-2 mb-3 text-xs text-amber-700 bg-amber-50 border border-amber-200 px-3 py-2 rounded-lg">
+                                                <span className="material-symbols-outlined text-amber-500 text-sm icon-filled">star</span>
+                                                <span className="font-bold">{formData.featured_photos?.length} foto(s) marcada(s)</span> — aparecem primeiro na galeria do anúncio.
                                             </div>
-                                        ))}
-                                        {/* Add Button in Grid */}
-                                        <button
-                                            type="button"
-                                            onClick={triggerGalleryUpload}
-                                            className="aspect-square rounded-xl border-2 border-dashed border-gray-300 flex flex-col items-center justify-center text-gray-400 hover:border-primary hover:text-primary hover:bg-primary/5 transition-all"
-                                        >
-                                            <span className="material-symbols-outlined text-2xl">add</span>
-                                            <span className="text-xs font-bold mt-1">Adicionar</span>
-                                        </button>
-                                    </div>
+                                        )}
+                                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                            {getSortedGallery().map((img, index) => {
+                                                const isFeatured = formData.featured_photos?.includes(img);
+                                                return (
+                                                    <div key={img} className={`relative group aspect-square rounded-xl overflow-hidden border-2 transition-all ${isFeatured ? 'border-amber-400 shadow-md shadow-amber-100' : 'border-gray-200'}`}>
+                                                        <img src={img} alt={`Gallery ${index}`} className="w-full h-full object-cover" />
+                                                        
+                                                        {/* Featured Badge */}
+                                                        {isFeatured && (
+                                                            <div className="absolute top-2 left-2 bg-amber-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1 shadow-sm">
+                                                                <span className="material-symbols-outlined text-xs icon-filled">star</span>
+                                                                Destaque
+                                                            </div>
+                                                        )}
+
+                                                        {/* Action Overlay */}
+                                                        <div className="absolute inset-0 bg-black/40 flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => handleToggleFeatured(img)}
+                                                                className={`p-2.5 rounded-full transition-colors shadow-sm ${isFeatured ? 'bg-amber-500 text-white hover:bg-amber-600' : 'bg-white/90 text-gray-700 hover:bg-amber-500 hover:text-white'}`}
+                                                                title={isFeatured ? 'Remover destaque' : 'Marcar como destaque'}
+                                                            >
+                                                                <span className={`material-symbols-outlined text-sm ${isFeatured ? 'icon-filled' : ''}`}>star</span>
+                                                            </button>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => handleRemoveGalleryImage(img)}
+                                                                className="bg-red-500/90 text-white p-2.5 rounded-full hover:bg-red-600 transition-colors shadow-sm"
+                                                                title="Remover"
+                                                            >
+                                                                <span className="material-symbols-outlined text-sm font-bold">delete</span>
+                                                            </button>
+                                                        </div>
+
+                                                        {/* Mobile: Always visible star button */}
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => handleToggleFeatured(img)}
+                                                            className={`absolute top-2 right-2 p-1.5 rounded-full shadow-sm md:hidden transition-colors ${isFeatured ? 'bg-amber-500 text-white' : 'bg-white/80 text-gray-500'}`}
+                                                        >
+                                                            <span className={`material-symbols-outlined text-sm ${isFeatured ? 'icon-filled' : ''}`}>star</span>
+                                                        </button>
+                                                    </div>
+                                                );
+                                            })}
+                                            {/* Add Button in Grid */}
+                                            <button
+                                                type="button"
+                                                onClick={triggerGalleryUpload}
+                                                className="aspect-square rounded-xl border-2 border-dashed border-gray-300 flex flex-col items-center justify-center text-gray-400 hover:border-primary hover:text-primary hover:bg-primary/5 transition-all"
+                                            >
+                                                <span className="material-symbols-outlined text-2xl">add</span>
+                                                <span className="text-xs font-bold mt-1">Adicionar</span>
+                                            </button>
+                                        </div>
+                                    </>
                                 ) : (
                                     <div
                                         onClick={triggerGalleryUpload}
@@ -1054,24 +1113,38 @@ export const AddPropertyForm: React.FC<AddPropertyFormProps> = ({ onSave, onCanc
                             </button>
                         )}
 
-                        {activeStep < 3 ? (
-                            <button
-                                type="button"
-                                onClick={() => setActiveStep(prev => prev + 1)}
-                                className="bg-gray-900 text-white px-8 py-3.5 rounded-xl font-bold shadow-lg hover:bg-black transition-all flex items-center gap-2 transform active:scale-95"
-                            >
-                                Próximo <span className="material-symbols-outlined">arrow_forward</span>
-                            </button>
-                        ) : (
-                            <button
-                                type="submit"
-                                disabled={!isSaveReady || isUploading}
-                                className={`bg-primary text-white px-8 py-3.5 rounded-xl font-bold shadow-lg transition-all flex items-center gap-2 transform active:scale-95 ${(!isSaveReady || isUploading) ? 'opacity-50 cursor-not-allowed' : 'hover:bg-primary-dark'}`}
-                            >
-                                <span className="material-symbols-outlined">check_circle</span>
-                                {isEditing ? 'Salvar Alterações' : 'Publicar Imóvel'}
-                            </button>
-                        )}
+                        <div className="flex items-center gap-3">
+                            {/* Quick Save: Available on any step when editing */}
+                            {isEditing && activeStep < 3 && (
+                                <button
+                                    type="submit"
+                                    disabled={isUploading}
+                                    className={`bg-primary text-white px-6 py-3.5 rounded-xl font-bold shadow-lg transition-all flex items-center gap-2 transform active:scale-95 ${isUploading ? 'opacity-50 cursor-not-allowed' : 'hover:bg-primary-dark'}`}
+                                >
+                                    <span className="material-symbols-outlined">save</span>
+                                    Salvar
+                                </button>
+                            )}
+
+                            {activeStep < 3 ? (
+                                <button
+                                    type="button"
+                                    onClick={() => setActiveStep(prev => prev + 1)}
+                                    className="bg-gray-900 text-white px-8 py-3.5 rounded-xl font-bold shadow-lg hover:bg-black transition-all flex items-center gap-2 transform active:scale-95"
+                                >
+                                    Próximo <span className="material-symbols-outlined">arrow_forward</span>
+                                </button>
+                            ) : (
+                                <button
+                                    type="submit"
+                                    disabled={!isSaveReady || isUploading}
+                                    className={`bg-primary text-white px-8 py-3.5 rounded-xl font-bold shadow-lg transition-all flex items-center gap-2 transform active:scale-95 ${(!isSaveReady || isUploading) ? 'opacity-50 cursor-not-allowed' : 'hover:bg-primary-dark'}`}
+                                >
+                                    <span className="material-symbols-outlined">check_circle</span>
+                                    {isEditing ? 'Salvar Alterações' : 'Publicar Imóvel'}
+                                </button>
+                            )}
+                        </div>
                     </div>
                 </form>
             </div>

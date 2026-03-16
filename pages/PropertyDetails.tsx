@@ -18,8 +18,17 @@ export const PropertyDetails: React.FC<PropertyDetailsProps> = ({ property, onBa
     const [touchStart, setTouchStart] = useState<number | null>(null);
     const [touchEnd, setTouchEnd] = useState<number | null>(null);
 
-    // Combine main image + gallery for the lightbox
-    const allImages = [property.imageUrl, ...property.gallery];
+    // Sort gallery: featured photos first, then the rest
+    const sortedGallery = useMemo(() => {
+        const featured = property.featured_photos || [];
+        if (featured.length === 0) return property.gallery;
+        const featuredImages = property.gallery.filter(img => featured.includes(img));
+        const normalImages = property.gallery.filter(img => !featured.includes(img));
+        return [...featuredImages, ...normalImages];
+    }, [property.gallery, property.featured_photos]);
+
+    // Combine main image + sorted gallery for the lightbox
+    const allImages = [property.imageUrl, ...sortedGallery];
 
     const openGallery = (index: number) => {
         setCurrentImageIndex(index);
@@ -210,7 +219,7 @@ export const PropertyDetails: React.FC<PropertyDetailsProps> = ({ property, onBa
                     </div>
 
                     {/* Side Images (Desktop Only) - Limit to 4 */}
-                    {property.gallery.slice(0, 4).map((img, idx) => (
+                    {sortedGallery.slice(0, 4).map((img, idx) => (
                         <div
                             key={idx}
                             className="hidden md:block relative group cursor-pointer overflow-hidden"
