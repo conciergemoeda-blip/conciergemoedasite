@@ -370,8 +370,20 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) =>
             // 3. Add the image to the PDF spanning the full computed width
             pdf.addImage(imgData, 'JPEG', 0, 10, pdfWidth, pdfHeight);
 
-            // 4. Save the file directly to the user's computer
-            pdf.save(`Relatorio_Concierge_${new Date().toISOString().split('T')[0]}.pdf`);
+            // 4. Save the file explicitly forcing the browser to understand it's a PDF
+            const pdfBlob = pdf.output('blob');
+            const blobUrl = URL.createObjectURL(pdfBlob);
+            
+            const link = document.createElement('a');
+            link.href = blobUrl;
+            link.download = `Relatorio_Concierge_${new Date().toISOString().split('T')[0]}.pdf`;
+            document.body.appendChild(link);
+            link.click();
+            
+            // Clean up memory
+            document.body.removeChild(link);
+            URL.revokeObjectURL(blobUrl);
+
             triggerToast('Relatório exportado com sucesso!', 'success');
         } catch (err) {
             console.error(err);
