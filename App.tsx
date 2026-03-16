@@ -17,17 +17,25 @@ import { SettingsProvider, useSettings } from './contexts/SettingsContext';
 
 
 const AppContent: React.FC = () => {
-  const [currentPage, setCurrentPage] = useState<Page>('HOME');
+  // Compute initial page from URL to prevent false PAGE_VIEW on mount
+  const getInitialPage = (): Page => {
+    if (window.location.pathname === '/admin') return 'LOGIN';
+    const params = new URLSearchParams(window.location.search);
+    return (params.get('p') as Page) || 'HOME';
+  };
+
+  const [currentPage, setCurrentPage] = useState<Page>(getInitialPage);
   const [selectedPropertyId, setSelectedPropertyId] = useState<string | null>(null);
   const { user, loading: authLoading } = useAuth();
   const { settings } = useSettings();
   const { properties } = useProperties();
   const { trackPageView } = useAnalytics();
 
-  // Track page views - ONLY for public-facing pages (not admin/login)
+  // Track page views - ONLY for public-facing pages AND verified public URL
   useEffect(() => {
     const isPublicPage = currentPage === 'HOME' || currentPage === 'DETAILS';
-    if (isPublicPage) {
+    const isPublicUrl = window.location.pathname !== '/admin';
+    if (isPublicPage && isPublicUrl) {
       trackPageView(window.location.pathname + window.location.search);
     }
   }, [currentPage, selectedPropertyId]);
