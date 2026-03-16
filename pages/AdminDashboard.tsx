@@ -10,6 +10,8 @@ import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import { useProperties } from '../hooks/useProperties';
 import { useSettings } from '../contexts/SettingsContext';
 import { useAnalyticsData } from '../hooks/useAnalyticsData';
+import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
 
 
 type TabType = 'DASHBOARD' | 'PROPERTIES' | 'SETTINGS';
@@ -58,6 +60,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) =>
     const [timeFilter, setTimeFilter] = useState<'ALL_TIME' | 'TODAY' | 'LAST_7_DAYS' | 'THIS_MONTH'>('ALL_TIME');
     const [selectedPropertyId, setSelectedPropertyId] = useState<string | null>(null);
     const analyticsData = useAnalyticsData(timeFilter, selectedPropertyId);
+    
+    // PDF Export State
+    const [isExportingPDF, setIsExportingPDF] = useState(false);
+    const reportRef = useRef<HTMLDivElement>(null);
 
     // Sync settings when they load from DB
     useEffect(() => {
@@ -337,6 +343,41 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) =>
             triggerToast('Erro ao atualizar configurações.', 'error');
         } finally {
             setIsSavingSettings(false);
+        }
+    };
+
+    const handleExportPDF = async () => {
+        if (!reportRef.current) return;
+        setIsExportingPDF(true);
+        
+        try {
+            // 1. Capture the HTML element using html2canvas
+            const canvas = await html2canvas(reportRef.current, {
+                scale: 1.5, // Reduced slightly from 2 to avoid memory bloat
+                useCORS: true, // Attempt to load external images (like avatars/property thumbnails)
+                logging: false, // Clean up console
+                backgroundColor: '#f9fafb' // match bg-gray-50
+            });
+
+            // 2. Compute dimensions for an A4 page
+            // Use JPEG compression instead of PNG to shrink file sizes from 11MB to ~500KB
+            // This prevents browsers from overriding the file name to a raw Hash string due to size.
+            const imgData = canvas.toDataURL('image/jpeg', 0.8);
+            const pdf = new jsPDF('p', 'mm', 'a4');
+            const pdfWidth = pdf.internal.pageSize.getWidth();
+            const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+
+            // 3. Add the image to the PDF spanning the full computed width
+            pdf.addImage(imgData, 'JPEG', 0, 10, pdfWidth, pdfHeight);
+
+            // 4. Save the file directly to the user's computer
+            pdf.save(`Relatorio_Concierge_${new Date().toISOString().split('T')[0]}.pdf`);
+            triggerToast('Relatório exportado com sucesso!', 'success');
+        } catch (err) {
+            console.error(err);
+            triggerToast('Ocorreu um erro ao exportar o PDF.', 'error');
+        } finally {
+            setIsExportingPDF(false);
         }
     };
 
@@ -900,12 +941,20 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) =>
                                 <p className="text-sm text-gray-500 mt-1">Visão dos acessos ao site e propriedades.</p>
                             </div>
                             <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
-                                <button className="bg-white border border-gray-200 text-gray-700 px-4 py-2 text-sm font-bold rounded-xl hover:bg-gray-50 transition-colors flex items-center justify-center gap-2 shadow-sm"
-                                    onClick={() => window.print()}
-                                    title="Exportar Relatório"
+                                <button
+                                    onClick={handleExportPDF}
+                                    disabled={isExportingPDF || analyticsData.loading}
+                                    className="bg-white border border-gray-200 text-gray-700 px-4 py-2 text-sm font-bold rounded-xl hover:bg-gray-50 transition-colors flex items-center justify-center gap-2 shadow-sm disabled:opacity-50"
+                                    title="Exportar Relatório em PDF"
                                 >
-                                    <span className="material-symbols-outlined text-[18px]">download</span>
-                                    <span className="hidden sm:inline">Exportar PDF</span>
+                                    {isExportingPDF ? (
+                                        <div className="w-5 h-5 border-2 border-gray-400 border-t-transparent rounded-full animate-spin"></div>
+                                    ) : (
+                                        <span className="material-symbols-outlined text-[18px]">download</span>
+                                    )}
+                                    <span className="hidden sm:inline">
+                                        {isExportingPDF ? 'Gerando...' : 'Exportar PDF'}
+                                    </span>
                                 </button>
                                 <div className="bg-white border border-gray-200 rounded-xl p-1 flex shadow-sm w-full md:w-auto overflow-x-auto no-scrollbar">
                                     {(
@@ -936,7 +985,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) =>
                                 <div className="w-8 h-8 border-4 border-primary/30 border-t-primary rounded-full animate-spin"></div>
                             </div>
                         ) : (
-                            <>
+                            <div ref={reportRef} className="pb-4">
                                 {/* Conditional Banner / Stats Cards */}
                                 {selectedPropertyId ? (() => {
                                     const selectedProperty = properties.find(p => p.id === selectedPropertyId);
@@ -1179,7 +1228,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) =>
                                         </div>
                                     </div>
                                 </div>
-                            </>
+                            </div>
                         )}
                     </div>
                 );
