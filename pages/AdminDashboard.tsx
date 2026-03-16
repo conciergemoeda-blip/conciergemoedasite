@@ -1088,7 +1088,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) =>
                                                     <span className="material-symbols-outlined">visibility</span>
                                                 </div>
                                                 <span className="text-green-600 bg-green-50 px-2 py-1 rounded-lg text-xs font-bold flex items-center gap-1">
-                                                    <span className="material-symbols-outlined text-xs">trending_up</span> +12%
+                                                    <span className="material-symbols-outlined text-xs">visibility</span> Total
                                                 </span>
                                             </div>
                                             <div className="text-3xl font-bold text-gray-900 mb-1 relative">{analyticsData.totalPageViews}</div>
@@ -1102,7 +1102,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) =>
                                                     <span className="material-symbols-outlined">holiday_village</span>
                                                 </div>
                                                 <span className="text-green-600 bg-green-50 px-2 py-1 rounded-lg text-xs font-bold flex items-center gap-1">
-                                                    <span className="material-symbols-outlined text-xs">trending_up</span> +24%
+                                                    <span className="material-symbols-outlined text-xs">holiday_village</span> Total
                                                 </span>
                                             </div>
                                             <div className="text-3xl font-bold text-gray-900 mb-1 relative">{analyticsData.totalPropertyViews}</div>
@@ -1116,7 +1116,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) =>
                                                     <span className="material-symbols-outlined">real_estate_agent</span>
                                                 </div>
                                                 <span className="text-orange-600 bg-orange-50 px-2 py-1 rounded-lg text-xs font-bold flex items-center gap-1">
-                                                    <span className="material-symbols-outlined text-xs">trending_flat</span> 0%
+                                                    <span className="material-symbols-outlined text-xs">real_estate_agent</span> Ativas
                                                 </span>
                                             </div>
                                             <div className="text-3xl font-bold text-gray-900 mb-1 relative">{properties.filter(p => !p.tags.includes('Pausado' as any)).length}</div>

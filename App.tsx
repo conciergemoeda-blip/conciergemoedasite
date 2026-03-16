@@ -24,9 +24,12 @@ const AppContent: React.FC = () => {
   const { properties } = useProperties();
   const { trackPageView } = useAnalytics();
 
-  // Track page views
+  // Track page views - ONLY for public-facing pages (not admin/login)
   useEffect(() => {
-    trackPageView(window.location.pathname + window.location.search);
+    const isPublicPage = currentPage === 'HOME' || currentPage === 'DETAILS';
+    if (isPublicPage) {
+      trackPageView(window.location.pathname + window.location.search);
+    }
   }, [currentPage, selectedPropertyId]);
 
   // Sync state with URL on mount and popstate
