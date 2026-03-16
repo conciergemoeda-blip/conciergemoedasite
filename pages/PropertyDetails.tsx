@@ -12,7 +12,7 @@ interface PropertyDetailsProps {
 }
 
 export const PropertyDetails: React.FC<PropertyDetailsProps> = ({ property, onBack }) => {
-    const { trackPropertyView } = useAnalytics();
+    const { trackPropertyView, trackWhatsAppClick } = useAnalytics();
     const [isGalleryOpen, setIsGalleryOpen] = useState(false);
     const [currentImageIndex, setCurrentImageIndex] = useState(0);
     const [touchStart, setTouchStart] = useState<number | null>(null);
@@ -74,6 +74,9 @@ export const PropertyDetails: React.FC<PropertyDetailsProps> = ({ property, onBa
     // WhatsApp Message Logic
     const openWhatsApp = () => {
         const message = `Olá! Vi sua propriedade no site do Concierge Moeda, queria mais informações do imóvel *${property.title}*.`;
+
+        // Track the WhatsApp click as a conversion event
+        trackWhatsAppClick(property.id, window.location.pathname + window.location.search);
 
         // Redirects to the specific property owner's phone number using the helper
         window.open(getWhatsAppLink(property.ownerPhone, message), '_blank');

@@ -8,7 +8,8 @@ export type TimeFilter = 'TODAY' | 'LAST_7_DAYS' | 'THIS_MONTH' | 'ALL_TIME';
 export const useAnalyticsData = (filter: TimeFilter, selectedPropertyId?: string | null) => {
   const [totalPageViews, setTotalPageViews] = useState(0);
   const [totalPropertyViews, setTotalPropertyViews] = useState(0);
-  const [topProperties, setTopProperties] = useState<{ property: Property, views: number }[]>([]);
+  const [totalWhatsAppClicks, setTotalWhatsAppClicks] = useState(0);
+  const [topProperties, setTopProperties] = useState<{ property: Property, views: number, whatsappClicks: number }[]>([]);
   const [chartData, setChartData] = useState<{ date: string; pageViews: number; propertyViews: number }[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -16,13 +17,12 @@ export const useAnalyticsData = (filter: TimeFilter, selectedPropertyId?: string
 
   useEffect(() => {
     const fetchAnalytics = async () => {
-      if (properties.length === 0) return; // Wait for properties to load
+      if (properties.length === 0) return;
       
       setLoading(true);
       try {
         let query = supabase.from('analytics_events').select('*');
 
-        // Apply Time Filter
         if (filter !== 'ALL_TIME') {
           const now = new Date();
           let startDate = new Date();
@@ -44,7 +44,9 @@ export const useAnalyticsData = (filter: TimeFilter, selectedPropertyId?: string
 
         let pageViews = 0;
         let propViews = 0;
+        let whatsClicks = 0;
         const propCounts: Record<string, number> = {};
+        const whatsappCounts: Record<string, number> = {};
         const timeSeries: Record<string, { pageViews: number; propertyViews: number }> = {};
 
         if (data) {
@@ -55,16 +57,23 @@ export const useAnalyticsData = (filter: TimeFilter, selectedPropertyId?: string
                 timeSeries[dateStr] = { pageViews: 0, propertyViews: 0 };
             }
 
-            // Always calculate propCounts for the Ranking
+            // Always calculate propCounts and whatsappCounts for the Ranking
             if (event.event_type === 'PROPERTY_VIEW' && event.property_id) {
                 propCounts[event.property_id] = (propCounts[event.property_id] || 0) + 1;
+            }
+            if (event.event_type === 'WHATSAPP_CLICK' && event.property_id) {
+                whatsappCounts[event.property_id] = (whatsappCounts[event.property_id] || 0) + 1;
             }
 
             // Filter data tracking based on selection
             if (selectedPropertyId) {
-                if (event.event_type === 'PROPERTY_VIEW' && event.property_id === selectedPropertyId) {
-                    propViews++;
-                    timeSeries[dateStr].propertyViews++;
+                if (event.property_id === selectedPropertyId) {
+                    if (event.event_type === 'PROPERTY_VIEW') {
+                        propViews++;
+                        timeSeries[dateStr].propertyViews++;
+                    } else if (event.event_type === 'WHATSAPP_CLICK') {
+                        whatsClicks++;
+                    }
                 }
             } else {
                 if (event.event_type === 'PAGE_VIEW') {
@@ -73,6 +82,8 @@ export const useAnalyticsData = (filter: TimeFilter, selectedPropertyId?: string
                 } else if (event.event_type === 'PROPERTY_VIEW' && event.property_id) {
                   propViews++;
                   timeSeries[dateStr].propertyViews++;
+                } else if (event.event_type === 'WHATSAPP_CLICK') {
+                  whatsClicks++;
                 }
             }
           });
@@ -80,21 +91,21 @@ export const useAnalyticsData = (filter: TimeFilter, selectedPropertyId?: string
 
         setTotalPageViews(pageViews);
         setTotalPropertyViews(propViews);
+        setTotalWhatsAppClicks(whatsClicks);
         
-        // Convert timeseries object to array for Recharts
         const chartArray = Object.entries(timeSeries).map(([date, counts]) => ({
             date,
             ...counts
         }));
         setChartData(chartArray);
 
-        // Map counts back to full property objects and sort
         const ranked = properties
           .map((prop) => ({
             property: prop,
             views: propCounts[prop.id] || 0,
+            whatsappClicks: whatsappCounts[prop.id] || 0,
           }))
-          .sort((a, b) => b.views - a.views); // Descending
+          .sort((a, b) => b.views - a.views);
 
         setTopProperties(ranked);
 
@@ -108,5 +119,5 @@ export const useAnalyticsData = (filter: TimeFilter, selectedPropertyId?: string
     fetchAnalytics();
   }, [filter, properties, selectedPropertyId]);
 
-  return { totalPageViews, totalPropertyViews, topProperties, chartData, loading };
+  return { totalPageViews, totalPropertyViews, totalWhatsAppClicks, topProperties, chartData, loading };
 };
